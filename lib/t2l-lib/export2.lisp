@@ -1,0 +1,13 @@
+((:ASEQ
+   (:ratio-minimum . nil)
+   (:measures (4 4) (4 4) (4 4))
+   (:measure-templates (nil))
+   (:beat-templates (0 0 0) (0 0 0 0) (nil 0 0 0 0 0 0) (0 nil 0 0))
+   ((:A14 (:max-process-levels . 1))
+    (:A14 (:max-process-levels . 1))
+    (:A14 (:max-process-levels . 1))
+    (:A14 (:max-process-levels . 1))
+    (:A14 (:max-process-levels . 1))
+    (:A14 (:max-process-levels . 1))
+    (:A14 (:max-process-levels . 1))
+    (:A14 (:max-process-levels . 1)))))
