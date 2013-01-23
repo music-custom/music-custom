@@ -1,10 +1,10 @@
 (in-package :cl-user)
 (setf system:*stack-overflow-behaviour* :warn)
 (load "C:/Program Files (x86)/OM 6.5.1/buildimage/build-om/build-om.lisp")
-(pushnew (concatenate 'string (namestring (get-working-directory)) "ompw/") asdf:*central-registry* :test #'eq)
+(setq ws (get-working-directory))
+(setq ompw-pathname (make-pathname :directory (append (butlast (PATHNAME-DIRECTORY ws)) (list "ompw")) :host (pathname-host ws)))
+(pushnew (namestring ompw-pathname) asdf:*central-registry* :test #'eq)
 (asdf:operate 'asdf:load-op :ompw)
-; (load (concatenate 'string (namestring (get-working-directory)) "ompw/load.lisp"))
-; (load (concatenate 'string (namestring (get-working-directory)) "screamer324/screamer.lisp"))
 (screamer:define-screamer-package :t2l 
                                   (:use :system :ompw)
                                   (:export "MAPPRULES"))

@@ -7,7 +7,7 @@
 
 ; Graph representation of context-free grammars
 ; Alex Shkotin arXiv:cs/0703015 http://arxiv.org/abs/cs/0703015
-(defun map-decision-making-graph (list 
+(defun mapprules-internal (list 
                                   prules
                                   &key continuation-mode
                                        ordered-partitions-nondeterministic-values-cap
@@ -370,6 +370,147 @@
                       (dolist (x vars) (assert! (memberv x terminals)))
                       (assert! (maprule vars (name dmg)))
                       (values vars dmg nil nil)))))))))))))
+
+(defstruct (dmg-cursor (:conc-name nil) (:print-function print-dmg-cursor)) label sym stack rules)
+
+(defvar *mapprules-default-input-process-increment* 4)
+(cl:defun mapprules (input 
+                     prules 
+                     &key input-process-increment
+                          continue
+                          init
+                          listdxx
+                          max
+                          min
+                          ordered-partitions-nondeterministic-values-cap
+                          superset
+                          symbol-mode
+                          params)
+"mapprules reads a template list and a list of production rules then attempts to express every possible combination of symbols that fit the template
+(all-values (solution (mapprules '(_ _ _ _ _)
+                                 '((:S x)
+                                   (:S y)
+                                   (:S :S + :S)
+				   (:S :S - :S)
+                                   (:S [ :S ]))
+                                   :symbol-mode t)
+                      (static-ordering #'linear-force))) =
+(([ [ y ] ]) ([ [ x ] ]) ([ y ] - y) ([ y ] - x) ([ y ] + y) ([ y ] + x) ([ y - y ]) ([ y - x ]) ([ y + y ]) ([ y + x ]) ([ x ] - y) ([ x ] - x) ([ x ] + y) ([ x ] + x) ([ x - y ]) ([ x - x ]) ([ x + y ]) ([ x + x ]) (y - [ y ]) (y - [ x ]) (y - y - y) (y - y - x) (y - y + y) (y - y + x) (y - x - y) (y - x - x) (y - x + y) (y - x + x) (y + [ y ]) (y + [ x ]) (y + y - y) (y + y - x) (y + y + y) (y + y + x) (y + x - y) (y + x - x) (y + x + y) (y + x + x) (x - [ y ]) (x - [ x ]) (x - y - y) (x - y - x) (x - y + y) (x - y + x) (x - x - y) (x - x - x) (x - x + y) (x - x + x) (x + [ y ]) (x + [ x ]) (x + y - y) (x + y - x) (x + y + y) (x + y + x) (x + x - y) (x + x - x) (x + x + y) (x + x + x))
+
+(all-values (solution (mapprules '([ _ _ _ _)
+                                 '((:S x)
+                                   (:S y)
+                                   (:S :S + :S)
+				   (:S :S - :S)
+                                   (:S [ :S ]))
+                                   :symbol-mode t)
+                      (static-ordering #'linear-force))) = 
+ (([ [ y ] ]) ([ [ x ] ]) ([ y ] - y) ([ y ] - x) ([ y ] + y) ([ y ] + x) ([ y - y ]) ([ y - x ]) ([ y + y ]) ([ y + x ]) ([ x ] - y) ([ x ] - x) ([ x ] + y) ([ x ] + x) ([ x - y ]) ([ x - x ]) ([ x + y ]) ([ x + x ]))"
+  (assert (not (and symbol-mode listdxx)))
+  (labels
+      ((init-label (string)
+         (cond ((not (stringp string)) (init-label (write-to-string string)))
+               ((= 0 (length string)) string)
+               ((string= ":" (subseq string 0 1)) string)
+               (t (concatenate 'string ":" string))))
+       (symeq (x y)
+         (let ((xS (init-label x))
+               (yS (init-label y)))
+           (string= xS yS)))
+       (underscore? (x) (symeq x "_"))
+       (atom->var (x)
+         (cond ((null x) nil) 
+               ((screamer::variable? x) x)
+               ((underscore? x) 
+                (cond (symbol-mode (make-variable))
+                      (t (an-integerv))))
+               ((integerp x) (make-intv= x))
+               ((floatp x) (make-realv= x))
+               ((numberp x) (make-numberv= x))
+               (t
+                (let ((v (make-variable)))                  
+                  (assert! (equalv v x))
+                  v))))
+       (process-increment-adjusted-length (length) 
+         (if input-process-increment
+             (* (ceiling (/ length (if (numberp input-process-increment)
+                                       input-process-increment
+                                     *mapprules-default-input-process-increment*)))
+                (if (numberp input-process-increment)
+                    input-process-increment
+                  *mapprules-default-input-process-increment*))
+           length))
+       (make-input-sequence (length)
+         (make-sequence 'list (process-increment-adjusted-length length) :initial-element '_)))
+    (cond
+     ((or (null input) (and (numberp input) (= 0 input)) (and (listp input) (every #'null (flat input)))) input)
+     (t
+      (let* ((list (cond ((null input) nil)
+                         ((listp input) input)
+                         ((numberp input) (make-input-sequence input))
+                         (t input)))
+             (list-vars (funcall-rec #'atom->var list))
+             (list-vars-flat-subseq (if init
+                                        (append (list init) (remove nil (flat list-vars)))
+                                      (remove nil (flat list-vars))))
+             (list-vars-flat (if (and input-process-increment
+                                      (< (length list-vars-flat-subseq) (process-increment-adjusted-length (length list-vars-flat-subseq))))
+                                 (append list-vars-flat-subseq 
+                                         (mapcar #'atom->var (make-sequence 'list (- (process-increment-adjusted-length (length list-vars-flat-subseq)) (length list-vars-flat-subseq)) :initial-element '_)))
+                               list-vars-flat-subseq))
+             (map-fn-input (if listdxx
+                               (listdxv (append list-vars-flat (list (atom->var '_))))
+                             list-vars-flat)))
+        (if (>= *mess* 20)
+            (progn
+              (print (format nil "mapprules list-vars ~A" list-vars))
+              (print (format nil "mapprules list-vars-flat ~A" list-vars-flat))
+              (print (format nil "mapprules map-fn-input ~A" map-fn-input))
+              (print (format nil "mapprules min ~A max ~A superset ~A input-process-increment ~A ordered-partitions-nondeterministic-values-cap ~A" min max superset input-process-increment ordered-partitions-nondeterministic-values-cap))))
+        (if (not symbol-mode)
+            (progn 
+              (if min (assert! (apply #'andv (mapcar #'(lambda (x) (>=v x min)) list-vars-flat))))
+              (if max (assert! (apply #'andv (mapcar #'(lambda (x) (<=v x max)) list-vars-flat))))))
+        (if superset (assert! (apply #'andv (mapcar #'(lambda (x) (memberv x superset)) list-vars-flat))))
+        (cond
+         (input-process-increment
+          (let* ((n (cond ((numberp input-process-increment) input-process-increment)
+                          (t *mapprules-default-input-process-increment*)))
+                 (out (let ((map-fn-input-chunks (nsucc map-fn-input n :step n)))
+                        (if (>= *mess* 15) (print (format nil "map-fn-input-chunks ~A" map-fn-input-chunks)))
+                        (let (c)
+                          (dotimes (i (length map-fn-input-chunks))
+                            (let ((vs (mapprules-internal (elt map-fn-input-chunks i)
+                                                                 prules
+                                                                 :continuation-mode continue
+                                                                 :symbol-mode symbol-mode
+                                                                 :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
+                                                                 :params params)))
+                            
+                              (cond
+                               (c 
+                                (cond 
+                                 (symbol-mode
+                                  (assert! (equalv (car vs) (last-atom (car c)))))
+                                 (t
+                                  (assert! (=v (car vs) (last-atom (car c))))))
+                                (push (cdr vs) c))
+                               (t (push vs c)))))
+                          (flat1 (reverse c))))))
+            (if (and input-process-increment (numberp input))
+                (subseq list-vars 0 input)
+              list-vars)))
+         (t 
+          (multiple-value-bind 
+              (vars dmg d r)
+              (mapprules-internal map-fn-input                                            
+                                         prules
+                                         :continuation-mode continue
+                                         :symbol-mode symbol-mode
+                                         :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
+                                         :params params) 
+            (values list-vars dmg d r)))))))))
+              
 
 (defmacro ifv (condition exp1 &optional (exp2 nil))
   ;; If the condition is bound then there is no need to create additional

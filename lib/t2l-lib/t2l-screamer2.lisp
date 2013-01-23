@@ -52,7 +52,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 
 ; Graph representation of context-free grammars
 ; Alex Shkotin arXiv:cs/0703015 http://arxiv.org/abs/cs/0703015
-(cl:defun map-decision-making-graph (list 
+(cl:defun mapprules-internal (list 
                                      prules
                                      &key ordered-partitions-nondeterministic-values-cap
                                           symbol-mode)
