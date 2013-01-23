@@ -201,7 +201,7 @@
                                                   (mapcar
                                                    #'(lambda (ys)
                                                        (let ((ms (car ys))
-                                                             (s (mapcar #'(lambda (x) (absv (if (listp x) (car x) x)))
+                                                             (s (mapcar #'(lambda (x) (integer-absv (if (listp x) (car x) x)))
                                                                         (cadr ys))))
                                                          #|(print (format nil "dddddddddddddddddddddddddddddd"))|#
                                                          #|(mapcar #'print s)|#
@@ -369,7 +369,7 @@
                  ;(assert! (let ((s (apply #'+v timevars)))
                  ;           (<=v s (*v timepoint 4))))
                  (assert! (=v (last-atom midicvars) midic))
-                 (assert! (apply #'andv (mapcar #'(lambda (x) (<v (absv x) 8)) (listdxv midicvars))))
+                 (assert! (apply #'andv (mapcar #'(lambda (x) (<v (integer-absv x) 8)) (listdxv midicvars))))
                  (if (cdr-assoc :midic-min params) (assert! (apply #'andv (mapcar #'(lambda (x) (>=v x (cdr-assoc :midic-min params))) midicvars))))
                  (if (cdr-assoc :midic-max params) (assert! (apply #'andv (mapcar #'(lambda (x) (<=v x (cdr-assoc :midic-max params))) midicvars))))
                  (assert! 
@@ -1556,7 +1556,7 @@
                 seqc))
     (if voice-interval-min
         (mapcar #'(lambda (x)
-                    (assert! (>=v (apply #'minv (mapcar #'absv (listdxv x))) voice-interval-min)))
+                    (assert! (>=v (apply #'minv (mapcar #'integer-absv (listdxv x))) voice-interval-min)))
                 (mat-trans (flatten-seqc seqc))))
     (if (>= *mess* 30) (lprint 'voice-interval-min voice-interval-min))
     (if xl-ival-list 
@@ -1674,10 +1674,10 @@
     (funcall cf-prcs-fn (flat list1))
     (if (>= *mess* 20) (print (list 'export1-block4 20)))
     (dolist (x seqcxl) 
-      (assert! (memberv (modv (absv (-v (car x) (cadr x))) 12) seqcxl-ivals)))
+      (assert! (memberv (modv (integer-absv (-v (car x) (cadr x))) 12) seqcxl-ivals)))
     (if (>= *mess* 20) (print (list 'export1-block4 30)))
     (dolist (x seqcxl) 
-      (assert! (<v (absv (-v (car x) (cadr x))) seqcxl-max-ival)))
+      (assert! (<v (integer-absv (-v (car x) (cadr x))) seqcxl-max-ival)))
     (if (>= *mess* 20) (print (list 'export1-block4 40)))
     (if no-voicex
         (dolist (x seqcxl)

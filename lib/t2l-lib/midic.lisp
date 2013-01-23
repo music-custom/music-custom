@@ -305,7 +305,7 @@
             (h (make-variable))) 
         (prolog-reverse b c)
         (prolog-nth 0 c h d)
-        (prolog-map2 #'(lambda (x y) (assert! (equalv y (absv (-v h x))))) c e)
+        (prolog-map2 #'(lambda (x y) (assert! (equalv y (integer-absv (-v h x))))) c e)
         (pcset-reorder-internal e r)))))
 
 (defun pcset-reorder-internal (b r) 
@@ -1704,7 +1704,7 @@
   (labels
       ((list->elems (list)
          (mapcar #'(lambda (x)
-                     (absv (cond ((listp x) (car x))
+                     (real-absv (cond ((listp x) (car x))
                                  (t x))))
                  list))
        (process-list (m list)
@@ -1742,7 +1742,7 @@
         (beats (mapcar 
                 #'(lambda (x)
                     ;(lprint 'xx x)
-                    (absv (cond ((listp x) (car x))
+                    (integer-absv (cond ((listp x) (car x))
                                 (t x))))
                 (non-plist-subseq list))))
     (list (list (apply #'+v beats)
@@ -1809,7 +1809,7 @@ score -* part -* voice -* var"
            (process-list (list)
              (mapcar #'(lambda (x) 
                          (cond ((listp x) (process-list (cadr x)))
-                               (t (absv x))))
+                               (t (integer-absv x))))
                      list)))
     (flat (process-list (cadr list)))))
 

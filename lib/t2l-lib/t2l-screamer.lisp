@@ -511,7 +511,7 @@
                                          :params params) 
             (values list-vars dmg d r)))))))))
               
-
+;; screamer+ macro Copyright 1998-2000 University of Aberdeen 
 (defmacro ifv (condition exp1 &optional (exp2 nil))
   ;; If the condition is bound then there is no need to create additional
   ;; constraint variables
@@ -533,6 +533,7 @@
 	  c)
 	 z))))
 
+;; screamer+ macro Copyright 1998-2000 University of Aberdeen 
 (defun quote-up (f &rest args)
   (cond
    ((= (length args) 0)
@@ -585,14 +586,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 	     (when (>= number ,n) (return-from n-values)))))
        ,values)))
 
+
 (defun ith-random-value (n expression)
   (one-value
-   (ith-value (a-member-of (permut-random (arithm-ser 0 n 1)))
+   (ith-value (a-random-member-of (arithm-ser 0 n 1))
               expression)))
-
-
-
-
 
 (defun om-assert! (&rest sequence)
   (if (cdr sequence) (dolist (x (butlast sequence)) (assert! x)))
@@ -606,6 +604,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 
 (defun om-call-one-value (fn)
   (one-value (funcall-nondeterministic fn)))
+
 (defun om-apply-one-value (fn &rest args)
   (one-value 
    (cond (args
@@ -679,8 +678,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 (defun best-solution (form1 objective-form &optional force-function form2)
   (best-value (om-solution form1 force-function) objective-form form2))
 
-
-
 (defun om-template (x)
   (multiple-value-list (template x)))
 
@@ -716,7 +713,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
   (let ((flat (flat x)))
     (andv (apply #'andv (mapcar #'(lambda (y) (>=v y min)) flat))
           (apply #'andv (mapcar #'(lambda (y) (<=v y max)) flat)))))
-
 (defun all/=v (x)
   (reduce #'/=v (flat x)))
 (defun all=v (x)
@@ -737,6 +733,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 
 (defun om-count-truesv (list)
   (apply #'count-truesv list))
+
+(defun real-absv (k)
+  (let ((m (a-realv)))
+    (assert! (orv (=v m k)
+                  (=v m (*v -1 k))))
+    (assert! (>=v m 0))
+    m))
+(defun real-abs-v (k)
+  (let ((m (a-realv)))
+    (assert! (orv (=v m k)
+                  (=v m (*v -1 k))))
+    (assert! (<=v m 0))
+    m))
 
 (defun integer-absv (k)
   (let ((m (an-integerv)))

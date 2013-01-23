@@ -13,7 +13,7 @@
     (assert! (memberv (car v) (list (car cf)
                                     (+v (car cf) 7)
                                     (+v (car cf) 12))))
-    (mapcar #'(lambda (x) (assert! (memberv (absv x) '(1 2 3 4 5)))) hivls)
+    (mapcar #'(lambda (x) (assert! (memberv (integer-absv x) '(1 2 3 4 5)))) hivls)
     (mapcar #'(lambda (x) (assert! (>=v x 0))) (list (car ivals) (car (reverse ivals))))
     (mapcar #'(lambda (x) (assert! (memberv x '(3 4 5 7 8 9 15)))) (subseq ivals 1 (1- (length ivals))))
     (mapcar #'(lambda (x) (assert! (notv (=v (modv x 12) 0)))) (subseq ivals 1 (1- (length ivals))))
