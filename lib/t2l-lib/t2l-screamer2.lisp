@@ -547,9 +547,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
     (assert! (=v c (funcallv #'pow a b)))
     c))
 
-(defun sumv (l)
-  (apply #'+v l))
-
 (defun prolog-union (y z w)
   (either 
     (let ((a (make-variable))

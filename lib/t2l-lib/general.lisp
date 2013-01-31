@@ -97,6 +97,7 @@
                      (funcall fn (car tree))
                    (car tree))
                  (funcall-rec-internal fn (cdr tree) level level-min level-max)))))
+
 (cl:defun funcall-rec-internal2 (fn tree level level-min level-max)
   (cond ((null tree) nil)
         ((consp (car tree))
@@ -114,6 +115,45 @@
                      (funcall fn (car tree))
                    (car tree))
                  (funcall-rec-internal2 fn (cdr tree) level level-min level-max)))))
+
+(defun funcall-nondeterministic-rec (fn tree &key level-min level-max cons-mode)
+  "recursively applies fn to atoms in tree"
+  (cond
+   (cons-mode
+    (funcall-nondeterministic-rec-internal2 fn tree 0 level-min level-max))
+   (t
+    (funcall-nondeterministic-rec-internal fn tree 0 level-min level-max))))
+
+(defun funcall-nondeterministic-rec-internal (fn tree level level-min level-max)
+  (cond ((null tree) nil)
+        ((consp (car tree))
+         (cons (funcall-nondeterministic-rec-internal fn (car tree) (1+ level) level-min level-max)
+               (funcall-nondeterministic-rec-internal fn (cdr tree) level level-min level-max)))
+        (t (cons (if (and (or (null level-min)
+                              (>= level level-min))
+                          (or (null level-max)
+                              (<= level level-max)))
+                     (funcall-nondeterministic fn (car tree))
+                   (car tree))
+                 (funcall-nondeterministic-rec-internal fn (cdr tree) level level-min level-max)))))
+
+(defun funcall-nondeterministic-rec-internal2 (fn tree level level-min level-max)
+  (cond ((null tree) nil)
+        ((consp (car tree))
+         (cons (if (and (or (null level-min)
+                            (>= level level-min))
+                        (or (null level-max)
+                            (<= level level-max)))
+                   (funcall fn (car tree))
+                 (funcall-nondeterministic-rec-internal2 fn (car tree) (1+ level) level-min level-max))
+               (funcall-nondeterministic-rec-internal2 fn (cdr tree) level level-min level-max)))
+        (t (cons (if (and (or (null level-min)
+                              (>= level level-min))
+                          (or (null level-max)
+                              (<= level level-max)))
+                     (funcall fn (car tree))
+                   (car tree))
+                 (funcall-nondeterministic-rec-internal2 fn (cdr tree) level level-min level-max)))))
 (defun mapr (fn tree)
   (cond ((null tree) nil)
         ((listp tree)
@@ -1102,14 +1142,101 @@ is replaced with replacement."
         ((and (listp arg1) (listp arg2)) (mapcar #'(lambda (input1 input2) (x-operator fn input1 input2)) arg1 arg2))
         (t nil)))
 
-(cl:defun om+ (arg1 arg2)
+(define-box om+ (arg1 arg2)
+  :icon 193
   (x-operator #'+ arg1 arg2))
-(cl:defun om- (arg1 arg2)
+(define-box om- (arg1 arg2)
+  :icon 194
   (x-operator #'- arg1 arg2))
-(cl:defun om* (arg1 arg2)
+(define-box om* (arg1 arg2)
+  :icon 195
   (x-operator #'* arg1 arg2))
-(cl:defun om/ (arg1 arg2)
+(define-box om/ (arg1 arg2)
+  :icon 196
   (x-operator #'/ arg1 arg2))
+(define-box om= (arg1 arg2)
+  :icon 259
+  (= arg1 arg2))
+(define-box om/= (arg1 arg2)
+  :icon 260
+  (/= arg1 arg2))
+(define-box om> (arg1 arg2)
+  :icon 256
+  (> arg1 arg2))
+(define-box om< (arg1 arg2)
+  :icon 255
+  (< arg1 arg2))
+(define-box om>= (arg1 arg2)
+  :icon 258
+  (>= arg1 arg2))
+(define-box om<= (arg1 arg2)
+  :icon 257
+  (<= arg1 arg2))
+
+(define-box list-om+ (list)
+  :icon 193
+  (reduce-chunks #'+ list :default 0))
+(define-box list-om- (list)
+  :icon 194
+  (apply #'- list))
+(define-box list-om* (list)
+  :icon 195
+  (reduce-chunks #'* list :default 0))
+(define-box list-om/ (list)
+  :icon 196
+  (apply #'/ list))
+(define-box list-om= (list)
+  :icon 259
+  (assert (listp list))
+  (assert (> (length list) 0))
+  (assert (every #'numberp list))
+  (reduce-chunks #'= list))
+(define-box list-om/= (list)
+  :icon 260
+  (assert (listp list))
+  (assert (> (length list) 0))
+  (assert (every #'numberp list))
+  (reduce-chunks #'/= list))
+(define-box list-om> (list)
+  :icon 256
+  (apply #'> list))
+(define-box list-om< (list)
+  :icon 255
+  (apply #'< list))
+(define-box list-om>= (list)
+  :icon 258
+  (apply #'>= list))
+(define-box list-om<= (list)
+  :icon 257
+  (apply #'<= list))
+(define-box list-omand (list)
+  :icon 218
+  (every #'identity list))
+(define-box list-omor (list)
+  :icon 219
+  (some #'identity list))
+
+(define-box stretch ((list '(a s d f)) (length 7) &key from-head)
+  :icon 235
+  (assert (listp list))
+  (assert (numberp length))
+  (assert (>= length 0))
+  (cond
+   ((= length (length list)) list)
+   ((< length (length list)) 
+    (cond
+     (from-head
+      (subseq list (- (length list) length) (length list)))
+     (t
+      (subseq list 0 length))))
+   (t 
+    (cond
+     (from-head
+      (append (make-sequence 'list (- length (length list)) :initial-element (car list))
+              list))
+     (t
+      (append list
+              (make-sequence 'list (- length (length list)) :initial-element (car (reverse list)))))))))
 
 (cl:defun funcalltr (fn tr)
   (cond ((null tr) nil)
@@ -1487,9 +1614,6 @@ is replaced with replacement."
 (cl:defun avg (n)
   (/ (apply #'+ n)
      (length n)))
-(cl:defun avgv (n)
-  (/v (apply #'+v n) (length n)))
-
 
 (cl:defun variance (n &optional sample-stdv)
   (let ((avg (avg n)))
@@ -1503,12 +1627,13 @@ is replaced with replacement."
            (- (length n) 1)
          (length n)))))
 (cl:defun variancev (n &optional sample-stdv)
-  (let ((avg (avgv n)))
-    (/v (apply #'+v (mapcar #'(lambda (x) (funcallv #'expt (-v x avg) 2)) n))
-        (if (and sample-stdv
-                 (> (length n) 0))
-            (- (length n) 1)
-          (length n)))))
+  (let ((input (mapcar #'(lambda (x) (make-realv= x)) n)))
+    (let ((avg (meanv input)))
+      (/v (sumv (mapcar #'(lambda (x) (funcallv #'expt (-v x avg) 2)) input))
+          (if (and sample-stdv
+                   (> (length input) 0))
+              (- (length input) 1)
+            (length input))))))
 
 (cl:defun stdv (n &optional sample-stdv)
   (sqrt (variance n sample-stdv)))
@@ -1625,6 +1750,7 @@ is replaced with replacement."
                                    ((numberp y) 'r)
                                    (t '_)))
                x))
+
 
 (cl:defun kill-background-jobs ()
   (let ((pname (mp:process-name (mp:get-current-process))))

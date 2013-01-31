@@ -43,7 +43,7 @@
   :icon 324
   :doc ""
   (let ((vars (mapcar #'(lambda (x)
-                          (let ((a (remove-nil x)))
+                          (let ((a (remove nil x)))
                             (cond 
                              ((and debug a)
                               (lprint 'seqc-xl-ival-members-var

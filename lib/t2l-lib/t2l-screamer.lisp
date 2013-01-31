@@ -7,12 +7,15 @@
 
 ; Graph representation of context-free grammars
 ; Alex Shkotin arXiv:cs/0703015 http://arxiv.org/abs/cs/0703015
-(defun mapprules-internal (list 
-                                  prules
-                                  &key continuation-mode
-                                       ordered-partitions-nondeterministic-values-cap
-                                       symbol-mode
-                                       params)
+; 
+; jan 2013 
+;                                                         ocannon@gmail.com
+(cl:defun mapprules-internal (list 
+                              prules
+                              &key continuation-mode
+                                   ordered-partitions-nondeterministic-values-cap
+                                   symbol-mode
+                                   params)
   (labels
       ((rule-label (sym) 
          (cond ((null sym) (gensym))
@@ -33,17 +36,11 @@
                         (append (list sym) (cdr rule)))))
                (t (list rule))))
        (init-label (string)
-         (cond ;((and (not (symbolp string))
-               ;      (not (stringp string)))
-               ; (init-label (funcall key string)))
-               ((not (stringp string)) (init-label (write-to-string string)))
+         (cond ((not (stringp string)) (init-label (write-to-string string)))
                ((= 0 (length string)) string)
                ((string= ":" (subseq string 0 1)) string)
                (t (concatenate 'string ":" string))))
        (symeq (x y) (eql x y))
-        ; (let ((xS (init-label x))
-        ;       (yS (init-label y)))
-        ;   (string= xS yS)))
        (underscore? (x) (symeq x '_)))
     (let* ((dnd (flat1 (mapcar #'one-to-one-transform prules)))
            (syms (remove-duplicates (flat dnd) :test #'symeq :from-end t))
@@ -55,10 +52,6 @@
                         syms)
                        :test #'list-eq
                        :from-end t)))
-      (if (>= *mess* 7)
-          (progn
-            (print (format nil "terminals: ~A" terminals))
-            (print (format nil "nonterminals: ~A" nonterminals))))
       (let ((and-syms (remove-if-not
                        #'(lambda (sym)
                            (or (and (not (position sym terminals :test #'symeq))
@@ -76,7 +69,6 @@
             ((terminal-sym? (sym) (position sym terminals))             
              (or-sym? (sym) (position sym or-syms))
              (and-sym? (sym) (position sym and-syms)))
-          (if (= *mess* -1) (mapcar #'print (mapcar #'(lambda (s) (format nil "sym: ~A and? ~A or? ~A term? ~A" s (and-sym? s) (or-sym? s) (terminal-sym? s))) syms)))
           (let ((dmg (cdar dmgassoc))
                 (dmg-sym-assoc nil)
                 (dmg-wordsize-assoc nil))
@@ -151,7 +143,6 @@
                      (let ((syms nil))
                        (labels
                            ((findsyms (s)
-                              (if (= *mess* -1) (print (format nil " > dmg-and-syms findsyms s: ~A" s)))
                               (cond
                                ((position s syms) (list s))
                                (t
@@ -175,37 +166,13 @@
                                  (remove-if-not #'terminal-sym? (cdr-assoc s dmg-sym-assoc))
                                  (mapcar #'findsyms (remove-if-not #'or-sym? (cdr-assoc s dmg-sym-assoc))))))))
                         (remove-duplicates (flat (findsyms or-sym)) :test #'symeq :from-end t)))))
- 
-                (if (= *mess* -1) (print (format nil "dmg-and-syms ~A~%dmg-sym-domain ~A" (dmg-and-syms (name dmg)) (dmg-sym-domain (name dmg)))))
                 (dolist (n (mapcar #'car dmgassoc))
                   (setf (cdr-assoc n dmg-wordsize-assoc)
                         (cons (dmg-min-wordsize n)
                               (dmg-max-wordsize n))))
                 (labels
                    ((min-wordsize (sym) (car (cdr-assoc sym dmg-wordsize-assoc)))
-                     ;(cond
-                     ; ((terminal-sym? sym) 1)
-                     ; ((or-sym? sym)
-                     ;  (cond
-                     ;   ((some #'terminal-sym? (cdr-assoc sym dmg-sym-assoc)) 1)
-                     ;   (t (apply #'min (mapcar #'min-wordsize (cdr-assoc sym dmg-sym-assoc))))))
-                     ; (t (length (cdr-assoc sym dmg-sym-assoc)))))
                     (max-wordsize (sym) (cdr (cdr-assoc sym dmg-wordsize-assoc))))
-                     ;(cond
-                     ; ((terminal-sym? sym) 1)
-                     ; ((or-sym? sym)
-                     ;  (cond
-                     ;   ((every #'terminal-sym? (cdr-assoc sym dmg-sym-assoc)) 1)
-                     ;   ((every #'(lambda (s) (every #'terminal-sym? (cdr-assoc s dmg-sym-assoc)))
-                     ;           (remove-if #'terminal-sym? (cdr-assoc sym dmg-sym-assoc)))
-                     ;    (apply #'max (mapcar #'length (mapcar #'(lambda (s) (cdr-assoc s dmg-sym-assoc)) (remove-if #'terminal-sym? (cdr-assoc sym dmg-sym-assoc))))))
-                     ;   (t nil)))
-                     ; (t
-                     ;  (cond
-                     ;   ((every #'terminal-sym? (cdr-assoc sym dmg-sym-assoc)) (length (cdr-assoc sym dmg-sym-assoc)))
-                     ;   (t nil))))))
-                (if (>= *mess* 10)
-                    (mapcar #'print (mapcar #'(lambda (s) (format nil "sym: ~A min-wordsize: ~A right-syms: ~A" s (min-wordsize s) (cdr-assoc s dmg-sym-assoc))) (remove-if #'terminal-sym? (mapcar #'car dmg-sym-assoc))  )))
                 (let ((vars (funcall-rec
                              #'(lambda (x) 
                                  (cond ((null x) nil)
@@ -244,8 +211,6 @@
                                         (list-eq c (cdr-assoc y rule-card-assoc))) 
                                     and-syms))
                                cards)))))
-                  (if (= *mess* -1) (print (format nil "or-and-sym-assoc: ~A" or-and-sym-assoc)))    
-                    ;(setf (cdr-assoc x or-and-sym-assoc) (dmg-and-syms x)))
                   (dolist (x (remove-if-not #'or-sym? (mapcar #'car dmg-sym-assoc)))
                     (setf (cdr-assoc x or-sym-domain-assoc) (dmg-sym-domain x)))
                   (let ((first-var (car vars))
@@ -270,7 +235,6 @@
                                  (fail))
                                p)))
                          (maprule (xs r)
-                           (if (= *mess* -1) (print (format nil "xs: (~A) r: ~A" (length xs) r)))
                            (cond
                             ((null xs) nil)
                             ((listp r)
@@ -307,7 +271,7 @@
                                (cdr-assoc (car xs) (cdr-assoc r term-sym-xs-assoc)))))
                             ((terminal-sym? r) nil)
                             ((and-sym? r) 
-                             (if (= *mess* -1) (print (format nil " WARNING using deprecated cond clause to process AND sym: ~A" r)))
+                             (print (format nil " WARNING : ~A" r))
                              (let* ((xs-length (length xs))
                                     (rcard (cond
                                             ((and continuation-mode
@@ -347,9 +311,7 @@
                                     (apply
                                      #'orv
                                      (mapcar
-                                      #'(lambda (x)
-                                          (let ((ps (ordered-partitions-of xs (cdr-assoc (car x) rule-card-assoc))))
-                                            (maprule ps x)))
+                                      #'(lambda (x) (maprule (ordered-partitions-of xs (cdr-assoc (car x) rule-card-assoc)) x))
                                       (cdr-assoc r or-and-sym-assoc))))
                                    (t 
                                     (let ((existing-var (find (cons r xs) or-sym-xs-assoc :key #'car :test #'list-eq)))
@@ -363,13 +325,10 @@
                                                (push (list (cons r xs) var) or-sym-xs-assoc)
                                                var)))))))
                             (t nil))))
-                      (if (= *mess* -1)
-                          (progn
-                            (mapcar #'print (mapcar #'(lambda (x) (format nil "~A: and? ~A or? ~A term? ~A ~A" x (and-sym? x) (or-sym? x) (terminal-sym? x) (cdr-assoc x dmg-sym-assoc))) (mapcar #'car dmg-sym-assoc)))
-                            (mapcar #'print (mapcar #'(lambda (x) (format nil "~A: min-wordsize: ~A max-wordsize: ~A" x (min-wordsize x) (max-wordsize x))) (mapcar #'car dmg-sym-assoc)))))
-                      (dolist (x vars) (assert! (memberv x terminals)))
-                      (assert! (maprule vars (name dmg)))
-                      (values vars dmg nil nil)))))))))))))
+                      (values (andv (all-memberv vars terminals)
+                                    (maprule vars (name dmg))) 
+                              vars                                                                                 
+                              dmg)))))))))))))
 
 (defstruct (dmg-cursor (:conc-name nil) (:print-function print-dmg-cursor)) label sym stack rules)
 
@@ -386,26 +345,6 @@
                           superset
                           symbol-mode
                           params)
-"mapprules reads a template list and a list of production rules then attempts to express every possible combination of symbols that fit the template
-(all-values (solution (mapprules '(_ _ _ _ _)
-                                 '((:S x)
-                                   (:S y)
-                                   (:S :S + :S)
-				   (:S :S - :S)
-                                   (:S [ :S ]))
-                                   :symbol-mode t)
-                      (static-ordering #'linear-force))) =
-(([ [ y ] ]) ([ [ x ] ]) ([ y ] - y) ([ y ] - x) ([ y ] + y) ([ y ] + x) ([ y - y ]) ([ y - x ]) ([ y + y ]) ([ y + x ]) ([ x ] - y) ([ x ] - x) ([ x ] + y) ([ x ] + x) ([ x - y ]) ([ x - x ]) ([ x + y ]) ([ x + x ]) (y - [ y ]) (y - [ x ]) (y - y - y) (y - y - x) (y - y + y) (y - y + x) (y - x - y) (y - x - x) (y - x + y) (y - x + x) (y + [ y ]) (y + [ x ]) (y + y - y) (y + y - x) (y + y + y) (y + y + x) (y + x - y) (y + x - x) (y + x + y) (y + x + x) (x - [ y ]) (x - [ x ]) (x - y - y) (x - y - x) (x - y + y) (x - y + x) (x - x - y) (x - x - x) (x - x + y) (x - x + x) (x + [ y ]) (x + [ x ]) (x + y - y) (x + y - x) (x + y + y) (x + y + x) (x + x - y) (x + x - x) (x + x + y) (x + x + x))
-
-(all-values (solution (mapprules '([ _ _ _ _)
-                                 '((:S x)
-                                   (:S y)
-                                   (:S :S + :S)
-				   (:S :S - :S)
-                                   (:S [ :S ]))
-                                   :symbol-mode t)
-                      (static-ordering #'linear-force))) = 
- (([ [ y ] ]) ([ [ x ] ]) ([ y ] - y) ([ y ] - x) ([ y ] + y) ([ y ] + x) ([ y - y ]) ([ y - x ]) ([ y + y ]) ([ y + x ]) ([ x ] - y) ([ x ] - x) ([ x ] + y) ([ x ] + x) ([ x - y ]) ([ x - x ]) ([ x + y ]) ([ x + x ]))"
   (assert (not (and symbol-mode listdxx)))
   (labels
       ((init-label (string)
@@ -460,56 +399,60 @@
                                list-vars-flat-subseq))
              (map-fn-input (if listdxx
                                (listdxv (append list-vars-flat (list (atom->var '_))))
-                             list-vars-flat)))
-        (if (>= *mess* 20)
-            (progn
-              (print (format nil "mapprules list-vars ~A" list-vars))
-              (print (format nil "mapprules list-vars-flat ~A" list-vars-flat))
-              (print (format nil "mapprules map-fn-input ~A" map-fn-input))
-              (print (format nil "mapprules min ~A max ~A superset ~A input-process-increment ~A ordered-partitions-nondeterministic-values-cap ~A" min max superset input-process-increment ordered-partitions-nondeterministic-values-cap))))
+                             list-vars-flat))
+             (c nil))        
+
         (if (not symbol-mode)
             (progn 
-              (if min (assert! (apply #'andv (mapcar #'(lambda (x) (>=v x min)) list-vars-flat))))
-              (if max (assert! (apply #'andv (mapcar #'(lambda (x) (<=v x max)) list-vars-flat))))))
-        (if superset (assert! (apply #'andv (mapcar #'(lambda (x) (memberv x superset)) list-vars-flat))))
+              (if min (push (reduce-chunks #'andv (mapcar #'(lambda (x) (>=v x min)) list-vars-flat) :default t) c))
+              (if max (push (reduce-chunks #'andv (mapcar #'(lambda (x) (<=v x max)) list-vars-flat) :default t) c))))
+        (if superset (push (reduce-chunks #'andv (mapcar #'(lambda (x) (memberv x superset)) list-vars-flat) :default t) c))
+
         (cond
          (input-process-increment
-          (let* ((n (cond ((numberp input-process-increment) input-process-increment)
-                          (t *mapprules-default-input-process-increment*)))
-                 (out (let ((map-fn-input-chunks (nsucc map-fn-input n :step n)))
-                        (if (>= *mess* 15) (print (format nil "map-fn-input-chunks ~A" map-fn-input-chunks)))
-                        (let (c)
-                          (dotimes (i (length map-fn-input-chunks))
-                            (let ((vs (mapprules-internal (elt map-fn-input-chunks i)
-                                                                 prules
-                                                                 :continuation-mode continue
-                                                                 :symbol-mode symbol-mode
-                                                                 :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
-                                                                 :params params)))
-                            
-                              (cond
-                               (c 
-                                (cond 
-                                 (symbol-mode
-                                  (assert! (equalv (car vs) (last-atom (car c)))))
-                                 (t
-                                  (assert! (=v (car vs) (last-atom (car c))))))
-                                (push (cdr vs) c))
-                               (t (push vs c)))))
-                          (flat1 (reverse c))))))
-            (if (and input-process-increment (numberp input))
-                (subseq list-vars 0 input)
-              list-vars)))
+          (let ((n (if (numberp input-process-increment) 
+                       input-process-increment
+                     *mapprules-default-input-process-increment*)))
+            (let ((map-fn-input-chunks (nsucc map-fn-input n :step (1- n))))
+              (let (incs)
+                (dotimes (i (length map-fn-input-chunks))
+                  (multiple-value-bind
+                      (mvar list)
+                      (mapprules-internal (elt map-fn-input-chunks i)
+                                          prules
+                                          :continuation-mode continue
+                                          :symbol-mode symbol-mode
+                                          :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
+                                          :params params)
+                    (lprint 'list list)
+                    (push mvar c)
+                    #|(cond
+                     (incs
+                      (push (cond 
+                             (symbol-mode
+                              (equalv (car list) (last-atom (car incs))))
+                             (t
+                              (=v (car list) (last-atom (car incs)))))
+                            c)
+                      (push (cdr list) incs))
+                     (t
+                      (push list incs)))|#))
+                (cond ((numberp input)
+                       (assert! (reduce-chunks #'andv c :default t))
+                       (subseq list-vars 0 input))
+                      (t
+                       (values (reduce-chunks #'andv c :default t)
+                               list-vars)))))))
          (t 
           (multiple-value-bind 
-              (vars dmg d r)
+              (var list dmg)
               (mapprules-internal map-fn-input                                            
-                                         prules
-                                         :continuation-mode continue
-                                         :symbol-mode symbol-mode
-                                         :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
-                                         :params params) 
-            (values list-vars dmg d r)))))))))
+                                  prules
+                                  :continuation-mode continue
+                                  :symbol-mode symbol-mode
+                                  :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
+                                  :params params) 
+            (values var list-vars dmg)))))))))
               
 ;; screamer+ macro Copyright 1998-2000 University of Aberdeen 
 (defmacro ifv (condition exp1 &optional (exp2 nil))
@@ -684,6 +627,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 (defmacro om-nondeterministic-fn-reference (sym &rest args)
   `(screamer:one-value (lambda (x) 
                          (funcall-nondeterministic (function ,sym) x ,@args))))
+
+(defun meanv (&rest xs)
+  (list-meanv xs))
+
+(defun list-meanv (list)
+  (/v (sumv (mapcar #'(lambda (x) (make-realv= x)) list))
+      (make-realv= (length list))))
+
 (defun list-boolean-opv (fn x value)
   (let ((input (flat x)))
     (reduce #'andv (mapcar #'(lambda (y) (funcall fn y value)) input))))
@@ -714,16 +665,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
     (andv (apply #'andv (mapcar #'(lambda (y) (>=v y min)) flat))
           (apply #'andv (mapcar #'(lambda (y) (<=v y max)) flat)))))
 (defun all/=v (x)
-  (reduce #'/=v (flat x)))
+  (reduce-chunks #'/=v (flat x)))
 (defun all=v (x)
-  (reduce #'=v (flat x)))
+  (reduce-chunks #'=v (flat x)))
 (defun all-andv (x)
-  (reduce #'andv (flat x)))
+  (reduce-chunks #'andv (flat x)))
 (defun all-orv (x)
-  (reduce #'orv (flat x)))
+  (reduce-chunks #'orv (flat x)))
 (defun all-memberv (e sequence)
   (let ((sequence-flat (flat sequence)))
-    (cond ((listp e) (reduce #'andv (mapcar #'(lambda (x) (memberv x sequence-flat)) (flat e))))
+    (cond ((listp e) (reduce-chunks #'andv (mapcar #'(lambda (x) (memberv x sequence-flat)) (flat e))))
           (t (memberv e sequence-flat)))))
 
 (defun a-random-member-of (list)
@@ -781,8 +732,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
   (let ((c (a-realv)))
     (assert! (=v c (funcallv #'pow a b)))
     c))
-(defun sumv (l)
-  (apply #'+v l))
+
+(cl:defun reduce-chunks (fn input &key default)
+  (cond
+   ((null input) default)
+   ((not (listp input)) (reduce-chunks fn (list input) :default default))
+   ((>= (length input) call-arguments-limit) 
+    (reduce fn (mapcar #'(lambda (chunk) (apply fn chunk)) 
+                       (nsucc input call-arguments-limit :step call-arguments-limit))))
+   (t (apply fn input))))
+(defun sumv (list)
+  (reduce-chunks #'+v list :default 0))
 
 (defun a-member-betweenv (list min max) 
   (let ((var (a-member-ofv list)))
@@ -2290,6 +2250,48 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
   (either    
     (mapcar #'(lambda (x) (if randomize-choices (a-random-member-ofv templates) (a-member-ofv templates))) (make-sequence 'list len))
     (an-expanded-list-rec (1+ len) templates :randomize-choices randomize-choices)))
+
+#|(defun embed-internal (input templates level levels)
+  (cond
+   ((< level levels)
+    (cond
+     ((null input) nil)
+     ((atom input) (embed-internal (a-random-member-of templates)
+                                   templates
+                                   (1+ level)
+                                   levels))
+     (t (append
+         (list (embed-internal (car input)
+                               templates
+                               level
+                               levels))
+         (embed-internal (cdr input)
+                         templates
+                         level
+                         levels)))))
+   (t input)))|#
+
+(defun embed-internal (input templates level levels)
+  (cond
+   ((< level levels)
+    (embed-internal (cond
+                     ((null input) (a-random-member-of templates))
+                     ((atom input) (a-random-member-of templates))
+                     (t (funcall-nondeterministic-rec #'(lambda (x) (a-random-member-of templates)) input)))
+                    templates
+                    (1+ level)
+                    levels))
+   (t input)))
+
+(defun embed (input templates &key (levels 2) test)
+  (let ((list (embed-internal input templates 0 levels)))
+    (unless (cond
+             ((null test) t)
+             ((listp test) (funcall (a-member-of test) list))
+             (t (funcall test list)))
+      (fail))
+    list))
+                
 
 (defun lsubs1-members-of (lists)
   (if (null lists)

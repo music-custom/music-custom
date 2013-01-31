@@ -447,26 +447,6 @@ midic-[start|min|max]"))
   (fill-enppar-slots (proto obj) vars)
   (fill-slots obj vars))
 
-
-
-
-(defun enppar->multipart-enppar-sequence-vars-internal (enps)
-  (cond
-   ((null enps) nil)
-   (t 
-    (print (format nil "enppar->multipart-enppar-sequence-vars-internal ~A (~A)..." (car enps) (length (cdr enps))))
-    (append (list (enppar->timepoint-seqc-vars (car enps)))
-              (enppar->multipart-enppar-sequence-vars-internal (cdr enps))))))
-
-(defun enppar->multipart-enppar-sequence-vars (obj)
-  (list (cons :vars (enppar->multipart-enppar-sequence-vars-internal (enps obj)))))
-;  (local
-;    (let (vars)
-;      (dolist (e (enps obj))
-;        (push (enppar->timepoint-seqc-vars e) vars))
-;      (list (cons :vars (reverse vars))))))
-    
-
 (defun enppar->timepoint-seqc-vars (obj)
   (print (format nil "enppar->timepoint-seqc-vars obj: ~A" obj))
   (cond ((null obj) nil)
@@ -494,15 +474,23 @@ midic-[start|min|max]"))
                         (cons :timepoints (mapcar
                                            #'(lambda (x) (cdr-assoc :timepoints x))
                                            vars-list)))))
-        ;(if (csp-rules obj) (assert! (apply #'andv (mapcar #'(lambda (x) (funcall x vars)) (csp-rules obj)))))
-        (cond
-         ((null (csp-rules obj)) nil)
-         ((listp (csp-rules obj)) (assert! (funcall (a-random-member-of (csp-rules obj)) vars)))
-         (t (assert! (funcall (csp-rules obj) vars))))
-        vars-list))))
-;      (list (cons :midics (mapcar #'(lambda (x) (cdr-assoc :midics x)) vars))
-;            (cons :timepoints (mapcar #'(lambda (x) (cdr-assoc :timepoints x)) vars))
-;            (cons :seqc-enps (mapcar #'(lambda (x) (cdr-assoc :seqc-enps x)) vars))))))
+        (assert! (cond
+                  ((null (csp-rules obj)) t)
+                  ((listp (csp-rules obj)) (funcall (a-random-member-of (csp-rules obj)) vars))
+                  (t (funcall (csp-rules obj) vars)))))
+      vars-list)))
+
+(defun enppar->multipart-enppar-sequence-vars-internal (enps)
+  (cond
+   ((null enps) nil)
+   (t 
+    (print (format nil "enppar->multipart-enppar-sequence-vars-internal ~A (~A)..." (car enps) (length (cdr enps))))
+    (append (list 
+             (enppar->timepoint-seqc-vars (car enps)))
+            (enppar->multipart-enppar-sequence-vars-internal (cdr enps))))))
+
+(defun enppar->multipart-enppar-sequence-vars (obj)
+  (list (cons :vars (enppar->multipart-enppar-sequence-vars-internal (enps obj)))))
 
 (defun enppar->csptech-timepoint-seqc-vars-call-cspvar-function-rec (seqc-enps)
   (cond
@@ -517,7 +505,7 @@ midic-[start|min|max]"))
           (funcall (cond ((listp (cspvar-function (car seqc-enps)))
                           (a-random-member-of (cspvar-function (car seqc-enps))))
                          (t (cspvar-function (car seqc-enps))))
-                   (car seqc-enps)))))          
+                   (car seqc-enps)))))
        (enppar->csptech-timepoint-seqc-vars-call-cspvar-function-rec (cdr seqc-enps))))))
                  
 (defun enppar->timepoint-seqc-with-prules-vars (obj)
@@ -527,28 +515,18 @@ midic-[start|min|max]"))
           (csp-rules (csp-rules obj)))
       (let ((seqc-enps (collect-multi-enppar #'(lambda (x) (subtypep (type-of x) 'timepoint-seqc-voice)) obj))
             (msbeats (ms-beat-count (measures obj) (modulus obj))))
-        (let ((seqc-vars ;(enppar->timepoint-seqc-with-prules-vars-seqc-vars-rec 
-                          (enppar->timepoint-seqc-voice-csp seqc-enps)))
-                          ;msbeats)))   
-          ;(print (format nil "enppar->timepoint-seqc-with-prules-vars seqc-vars: ~A" seqc-vars))
+        (let ((seqc-vars (enppar->timepoint-seqc-voice-csp seqc-enps)))
           (let ((mvs (mapcar
                       #'(lambda (x) (cdr-assoc :midics x))
                       seqc-vars))
                 (tvs (mapcar
                       #'(lambda (x) (cdr-assoc :timepoints x))
                       seqc-vars)))
-            ;(print (format nil "enppar->timepoint-seqc-with-prules-vars mvs: ~A tvs: ~A" mvs tvs))
-            
-            (if (>= *mess* 3) (print (format nil "enppar->timepoint-seqc-with-prules-vars ~A: ~A time-csp-predicates..." obj (length time-csp-predicates))))
-            ;(if time-csp-predicates (assert! (apply #'andv (mapcar #'(lambda (x) (funcall x tvs)) time-csp-predicates))))
-            (cond
-             ((null time-csp-predicates) nil)
-             ((listp time-csp-predicates) (assert! (funcall (a-member-of time-csp-predicates) tvs)))
-             (t (assert! (funcall time-csp-predicates tvs))))
-            (if (>= *mess* 3) (print (format nil "enppar->timepoint-seqc-with-prules-vars ~A: screamer:solution: ~A..." obj (mapcar #'length tvs))))
+            (assert! (cond
+                      ((null time-csp-predicates) t)
+                      ((listp time-csp-predicates) (funcall (a-member-of time-csp-predicates) tvs))
+                      (t (funcall time-csp-predicates tvs))))
             (let ((tvssoln (om-solution tvs *solution*)))
-              ;(unless (every #'(lambda (xs) (>= (apply #'+ xs) msbeats)) tvssoln) (fail))
-              (if (>= *mess* 3) (print (format nil "enppar->timepoint-seqc-with-prules-vars ~A tvssoln ~A..." obj (mapcar #'length tvssoln))))
               (let ((mvsseqc (mapcar 
                               #'(lambda (xs ys) 
                                   (flat
@@ -558,12 +536,10 @@ midic-[start|min|max]"))
                                     ys)))
                               (reverse mvs)
                               tvssoln)))
-                (if (>= *mess* 3) (print (format nil "enppar->timepoint-seqc-with-prules-vars ~A: ~A midic-csp-predicates..." obj (length time-csp-predicates))))
-                ;(if midic-csp-predicates (assert! (apply #'andv (mapcar #'(lambda (x) (funcall x mvsseqc)) midic-csp-predicates))))
-                (cond
-                 ((null midic-csp-predicates) nil)
-                 ((listp midic-csp-predicates) (assert! (funcall (a-member-of midic-csp-predicates) mvsseqc)))
-                 (t (assert! (funcall midic-csp-predicates mvsseqc))))
+                (assert! (cond
+                          ((null midic-csp-predicates) t)
+                          ((listp midic-csp-predicates) (funcall (a-member-of midic-csp-predicates) mvsseqc))
+                          (t (funcall midic-csp-predicates mvsseqc))))
                 (list (cons :midics mvs)
                       (cons :timepoints tvssoln)
                       (cons :seqc-enps seqc-enps)))))))))
@@ -607,15 +583,12 @@ midic-[start|min|max]"))
 (defun enppar->csptech-timepoint-seqc-voice-csp (obj)
     (let ((csp-rules (csp-rules obj))
           (vars (funcall (cspvar-function e) (mergeassoc (params e) (list (cons :enppar e) (:seqc-enppar obj))))))
-      ;(if csp-rules (assert! (apply #'andv (mapcar #'(lambda (x) (funcall x vars)) csp-rules))))
-      (cond
-       ((null csp-rules) nil)
-       ((listp csp-rules) (assert! (funcall (a-member-of csp-rules) vars)))
-       (t (assert! (funcall csp-rules vars))))
+      (assert! (cond
+                ((null csp-rules) t)
+                ((listp csp-rules) (funcall (a-member-of csp-rules) vars))
+                (t (funcall csp-rules vars))))
       (setf (cdr-assoc :enp vars) obj)
       vars))
-
-
 
 (defun enppar->timepoint-seqc-voice-with-prules-vars (obj)
   "[midic|time|mapprules]-incomplete-productions"
@@ -647,7 +620,6 @@ midic-[start|min|max]"))
                             (midics (cdr-assoc :prev-enp (params obj))))))
     (let ((continue-midic-list (if continuation? (atomsv (flat (midics (cdr-assoc :prev-enp (params obj)))))))
           (continue-time-list (if continuation? (remove nil (flat (timepoints (cdr-assoc :prev-enp (params obj))))))))
-      (print (format nil "enppar->timepoint-seqc-voice-with-prules-vars continuation? ~A" continuation?))
       (assert (> msbeats 0))
       (let ((mapprules-input-length-cap (ceiling (/ msbeats time-min)))) ; max # of vars to fill measures
         (let ((timepoints (mapprules (if continuation? (1+ mapprules-input-length-cap) mapprules-input-length-cap)
