@@ -10,6 +10,26 @@
                                    ordered-partitions-nondeterministic-values-cap
                                    symbol-mode
                                    params)
+  "reads a template list and a list of production rules, of the form S -> w where S is a nonterminal symbol and w is a sequence of terminal or nonterminal symbols, and attempts to express every possible combination of symbols that fit the template:
+(all-values (solution (mapprules '(_ _ _ _ _)
+                                 '((:S x)
+                                   (:S y)
+                                   (:S :S + :S)
+				   (:S :S - :S)
+                                   (:S [ :S ]))
+                                   :symbol-mode t)
+                      (static-ordering #'linear-force))) =
+(([ [ y ] ]) ([ [ x ] ]) ([ y ] - y) ([ y ] - x) ([ y ] + y) ([ y ] + x) ([ y - y ]) ([ y - x ]) ([ y + y ]) ([ y + x ]) ([ x ] - y) ([ x ] - x) ([ x ] + y) ([ x ] + x) ([ x - y ]) ([ x - x ]) ([ x + y ]) ([ x + x ]) (y - [ y ]) (y - [ x ]) (y - y - y) (y - y - x) (y - y + y) (y - y + x) (y - x - y) (y - x - x) (y - x + y) (y - x + x) (y + [ y ]) (y + [ x ]) (y + y - y) (y + y - x) (y + y + y) (y + y + x) (y + x - y) (y + x - x) (y + x + y) (y + x + x) (x - [ y ]) (x - [ x ]) (x - y - y) (x - y - x) (x - y + y) (x - y + x) (x - x - y) (x - x - x) (x - x + y) (x - x + x) (x + [ y ]) (x + [ x ]) (x + y - y) (x + y - x) (x + y + y) (x + y + x) (x + x - y) (x + x - x) (x + x + y) (x + x + x))
+
+(all-values (solution (mapprules '([ _ _ _ _)
+                                 '((:S x)
+                                   (:S y)
+                                   (:S :S + :S)
+				   (:S :S - :S)
+                                   (:S [ :S ]))
+                                   :symbol-mode t)
+                      (static-ordering #'linear-force))) = 
+ (([ [ y ] ]) ([ [ x ] ]) ([ y ] - y) ([ y ] - x) ([ y ] + y) ([ y ] + x) ([ y - y ]) ([ y - x ]) ([ y + y ]) ([ y + x ]) ([ x ] - y) ([ x ] - x) ([ x ] + y) ([ x ] + x) ([ x - y ]) ([ x - x ]) ([ x + y ]) ([ x + x ]))"
   (labels
       ((rule-label (sym) 
          (cond ((null sym) (gensym))
