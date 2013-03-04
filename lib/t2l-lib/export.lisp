@@ -1695,5 +1695,72 @@
                                  (list (+ (last-atom partition-list-left) remaining-size))))
          (index-list (partn->index-list partition-list)))
     (mapcar #'(lambda (x) (subseq list (car x) (cadr x))) index-list)))
+(om::defmethod! escalier ((liste list) (pas integer))
+  :initvals '('(1 2 3 4 5 6) 2)
+  :indoc '("List" "Step")
+  :icon 136
+  :doc   "permute en escalier : si pas = 2 ,(1 2 3 4 5 6)  devient (1 3 2 4 3 5 4 6)"
+  (let ((res))
+    (dotimes (i (- (length liste)  pas))
+      (push (nth i liste) res)
+      (push (nth (+ i pas) liste) res))
+    (nreverse res)))
+
+;===Rename escalier as stairs 26-06-2007===================
+
+(om::defmethod! stairs ((liste list) (step integer))
+  :initvals '('(1 2 3 4 5 6) 2)
+  :indoc '("List" "Step")
+  :icon 136
+  :doc   "Returns a permutation according to a stairs model. For example, with a stepsize equal to 2, the list (1 2 3 4 5 6) will become (1 3 2 4 3 5 4 6)."
+
+  (escalier liste step))
+
+(defun export2-delay-pairs (&key 
+                            (length 12) 
+                            (min 60)
+                            (max 80) 
+                            (prules '((:S 5 :A)
+                                      (:S :A 5)
+                                      (:S :S :S)
+                                      (:A -9)
+                                      (:A -8)
+                                      (:A -7)
+                                      (:A -5)
+                                      (:A -4)
+                                      (:A -3)
+                                      (:A -2)
+                                      (:A 2)
+                                      (:A 3)
+                                      (:A 4)
+                                      (:A 5)
+                                      (:A 7)))
+                            (xpos nil)
+                            (input-process-increment 2))
+
+  (let ((s (mapcar #'(lambda (x) (an-integer-betweenv min max)) (make-sequence 'list length))))
+    (assert! (mapprules s prules :listdxx t :input-process-increment input-process-increment))
+    (let ((xpos1 (cond ((null xpos) (an-integer-betweenv 0 11))
+                    ((listp xpos) (a-member-ofv xpos))
+                    (t xpos))))
+      (let ((s2 (funcall-rec #'(lambda (x) (+v x xpos1)) s)))
+        (let ((ps (nsucc s 2 :step 2))
+              (ps2 (rotate (nsucc s2 2 :step 2) -2)))
+          (let* ((seqc (list (mapcar #'(lambda (xs) (list xs (list (cadr xs) (car xs)))) ps)
+                            (mapcar #'(lambda (xs) (list (list (car xs) (cadr xs)) xs)) ps2)))
+                 (cartx (remove-duplicates
+                         (flat1
+                          (mapcar 
+                           #'(lambda (xs)
+                               (remove-duplicates 
+                                (remove-if #'(lambda (x) (eq (car x) (cadr x)))
+                                           (cartesian-product xs xs))
+                                :test #'set-difference-eq))
+                           (mat-trans (flatten-seqc seqc))))
+                         :test #'set-difference-eq))
+                 (ivs (mapcar #'(lambda (xs) (modv (-v (car xs) (cadr xs)) 12)) cartx)))
+            (assert! (all-memberv ivs '(2 3 4 5 6 7 8 9)))
+            (values s xpos)))))))
+
     
     

@@ -30,6 +30,7 @@
     seqc))    
 
 (define-box ratio-divisibility-var (ratios &optional (d (2 3)))
+  :icon 324
   (let ((ds (if (listp d) d (list d))))
     (reduce 
      #'andv
@@ -38,28 +39,26 @@
           (equalv (modv x (a-member-ofv ds)) 0))
       (mapcar #'(lambda (x) (ifv (<v x 1) (funcallv #'/ 1 x) x)) (flat ratios))))))
 
-(define-box seqc-xl-ival-members-var (list &key (ivalset (3 4 5 7 8 9 -9 -8 -7 -5 -4 -3)) debug)
+(define-box seqc-xl-ival-members-var (list &key (ivalset (3 4 5 7 8 9)) debug)
   :indoc '("" "")
   :icon 324
   :doc ""
-  (let ((vars (mapcar #'(lambda (x)
-                          (let ((a (remove nil x)))
-                            (cond 
-                             ((and debug a)
-                              (lprint 'seqc-xl-ival-members-var
-                                      (mapcar #'(lambda (y) 
-                                                  (modv y 12))
-                                              (listdxv a)))
-                              t)
-                             (a 
-                              (all-memberv (mapcar #'(lambda (y)
-                                                       (modv y 12)) 
-                                                   (listdxv a)) 
-                                           ivalset))
-                             (t t))))
-                        (mat-trans (flatten-seqc (remove nil list))))))
-    (if (>= *mess* 33) (lprint 'seqc-xl-ival-members-var 'vars vars))
-    (apply #'andv vars)))
+  (let ((pairs (remove-duplicates  
+                (remove-if #'(lambda (xs) (or (null xs)
+                                              (position nil xs)
+                                              (eq (car xs) (cadr xs))))
+                           (flat1
+                            (mapcar 
+                             #'(lambda (xs)
+                                 (cartesian-product xs xs))
+                             (mat-trans (flatten-seqc (remove nil list))))))
+                :test #'set-difference-eq)))
+    (if (>= *mess* 33) (lprint 'seqc-xl-ival-members-var 'pairs pairs))
+    (let ((ivs (mapcar #'(lambda (xs)
+                           (modv (-v (car xs) (cadr xs)) 12))
+                       pairs)))
+      (if (>= *mess* 33) (lprint 'seqc-xl-ival-members-var 'ivs ivs))
+      (all-memberv ivs ivalset))))
 
 (define-box simultaneous-event-count-minv (seqc &key (ratio 0.2))
   :indoc '("input" "mode")
@@ -400,40 +399,3 @@
                               (notv (list=v l1 l2))))
                         (nPr (if car/=v (mapcar #'cdr seqc) seqc)
                              2)))))
-
-(define-box read-textfile (filename)
-  :indoc '("filename")
-  :icon 908
-  :doc ""
-  (let ((in (open filename :if-does-not-exist nil)))
-    (when in
-      (let ((string (loop for line = (read-line in nil)
-                          while line collect line)))
-        (close in)
-        (print string)
-        (let ((out (apply
-                    #'concatenate
-                    (append (list 'string)
-                            (mapcar #'(lambda (s)
-                                        (format nil (concatenate 'string s "~%")))
-                                    (butlast string))
-                            (last string)))))
-          out)))))
-
-(define-box write-textfile (input label ext &optional timezone)
-  :indoc '("input" "label" "ext" "timezone")
-  :icon 908
-  :doc ""
-  (labels
-      ((format-filename (label) 
-         (multiple-value-bind 
-             (second minute hour date month year day) 
-             (decode-universal-time (get-universal-time))
-           (format nil "~A_~A-~A-~A-~A_~A_~A.~A" label month day year hour minute second ext))))
-    (let ((filename (format-filename label)))
-      (with-open-file (str (om::outfile filename)
-                           :direction :output
-                           :if-exists :supersede
-                           :if-does-not-exist :create)
-        (format str (write-to-string input)))
-      filename)))

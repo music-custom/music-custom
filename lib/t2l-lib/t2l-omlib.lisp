@@ -31,8 +31,7 @@
             init-seqc
             init-rhythm-trees)))
 
-(define-box seqc->poly ((seqc list) (rhythm-trees list) &key bpm)
-  :initvals '(((60)) ((? (((4 4) (-1)))) -1))
+(define-box seqc->poly ((seqc ((60))) (rhythm-trees ((? (((4 4) (-1)))) -1)) &key bpm)
   :indoc '("seqc" "trees")
   :icon 225
   :doc ""

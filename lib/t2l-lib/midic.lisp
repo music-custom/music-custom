@@ -211,10 +211,10 @@
                 ((car last-midics)
                  (list input :notes (list (car last-midics))))
                 (t
-                 (abs-v input))))
+                 (*v -1 (absv input)))))
               (t
                (if (>= *mess* 5) (print (format nil "om->enp-beat rest input: ~A" input)))
-               (abs-v input))))))
+               (*v -1 (abs-v input)))))))
          (om->enp-group (input)
            nil))
       (mapcar #'om->enp-ms (cadr list)))))

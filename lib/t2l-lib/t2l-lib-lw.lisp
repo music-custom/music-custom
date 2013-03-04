@@ -21,3 +21,7 @@
                "export"
                ))
   (load (concatenate 'string filepath x ".lisp")))
+
+#|(setq omtristan30-ws (make-pathname :directory (append (butlast (PATHNAME-DIRECTORY ws)) (list "OmTristan 3.0" "sources")) :host (pathname-host ws)))
+(if (probe-file omtristan30-ws)
+    (load (concatenate 'string (namestring omtristan30-ws) "TMlibrairie-OM.lisp")))|#

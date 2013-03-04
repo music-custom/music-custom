@@ -260,7 +260,7 @@
         (t list)))
 
 (cl:defun rotate (list &optional n)
-  (rotate-internal list (if n n 1)))
+  (rotate-internal list (mod (if n n 1) (length list))))
 
 (cl:defun split-list (list &key (test #'numberp))
   (let (a)
@@ -1751,7 +1751,45 @@ is replaced with replacement."
                                    (t '_)))
                x))
 
+(defun set-difference-eq (x y) (and (not (or (null x) (null y))) (or (and (null x) (null y)) (null (set-difference x y)))))
 
+
+(define-box read-textfile (filename)
+  :indoc '("filename")
+  :icon 908
+  :doc ""
+  (let ((in (open filename :if-does-not-exist nil)))
+    (when in
+      (let ((string (loop for line = (read-line in nil)
+                          while line collect line)))
+        (close in)
+        (print string)
+        (let ((out (apply
+                    #'concatenate
+                    (append (list 'string)
+                            (mapcar #'(lambda (s)
+                                        (format nil (concatenate 'string s "~%")))
+                                    (butlast string))
+                            (last string)))))
+          out)))))
+
+(define-box write-textfile (input label ext &optional timezone)
+  :indoc '("input" "label" "ext" "timezone")
+  :icon 908
+  :doc ""
+  (labels
+      ((format-filename (label) 
+         (multiple-value-bind 
+             (second minute hour date month year day) 
+             (decode-universal-time (get-universal-time))
+           (format nil "~A_~A-~A-~A-~A_~A_~A.~A" label month day year hour minute second ext))))
+    (let ((filename (format-filename label)))
+      (with-open-file (str (om::outfile filename)
+                           :direction :output
+                           :if-exists :supersede
+                           :if-does-not-exist :create)
+        (format str (write-to-string input)))
+      filename)))
 (cl:defun kill-background-jobs ()
   (let ((pname (mp:process-name (mp:get-current-process))))
    (loop for p in (mp:list-all-processes)

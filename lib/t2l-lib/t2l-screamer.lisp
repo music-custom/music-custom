@@ -15,7 +15,8 @@
                               &key continuation-mode
                                    ordered-partitions-nondeterministic-values-cap
                                    symbol-mode
-                                   params)
+                                   params
+                                   print-graph-info)
   (labels
       ((rule-label (sym) 
          (cond ((null sym) (gensym))
@@ -72,6 +73,15 @@
           (let ((dmg (cdar dmgassoc))
                 (dmg-sym-assoc nil)
                 (dmg-wordsize-assoc nil))
+            (if print-graph-info
+                (dolist (x (mapcar #'car dmgassoc))
+                  (print (format nil 
+                                 "~A: terminal? ~A or-sym? ~A and-sym? ~A syms: ~A" 
+                                 x
+                                 (terminal-sym? x)
+                                 (or-sym? x)
+                                 (and-sym? x)
+                                 (mapcar #'name (next-nodes (cdr-assoc x dmgassoc)))))))
             (labels 
                 ((make-edges (node)
                    (cond ((or-sym? (name node))
@@ -118,10 +128,8 @@
                                    ((position nil rs) nil)
                                    (t
                                     (cond
-                                     ((and-sym? s)
-                                      (reduce #'+ rs))
-                                     (t
-                                      (reduce #'max rs))))))))))
+                                     ((and-sym? s) (reduce #'+ rs))
+                                     (t (reduce #'max rs))))))))))
                          (findmax sym))))
                    (dmg-min-wordsize (sym)
                      (let ((syms nil))
@@ -131,13 +139,15 @@
                                ((terminal-sym? s) 1)
                                ((position s syms) nil)
                                (t
+                                ;(lprint 'findmin 's s)
                                 (push s syms)
                                 (let ((rs (mapcar #'findmin (cdr-assoc s dmg-sym-assoc))))
                                   (cond
-                                   ((and-sym? s)
-                                    (reduce #'+ (mapcar #'(lambda (x) (if (null x) 1 x)) rs)))
-                                   (t
-                                    (reduce #'min (remove nil rs)))))))))
+                                   ((and-sym? s) (reduce #'+ (mapcar #'(lambda (x) (if (null x) 1 x)) rs)))
+                                   ((null (remove nil rs)) 1)
+                                   (t 
+                                    ;(lprint 'findmin 'or-sym 's s 'rs rs)
+                                    (reduce #'min (mapcar #'(lambda (x) (if (null x) 1 x)) rs)))))))))
                          (findmin sym))))
                    (dmg-and-syms (or-sym)                     
                      (let ((syms nil))
@@ -173,179 +183,234 @@
                 (labels
                    ((min-wordsize (sym) (car (cdr-assoc sym dmg-wordsize-assoc)))
                     (max-wordsize (sym) (cdr (cdr-assoc sym dmg-wordsize-assoc))))
-                (let ((vars (funcall-rec
-                             #'(lambda (x) 
-                                 (cond ((null x) nil)
-                                       ((screamer::variable? x) x)
-                                       ((underscore? x) (make-list-input-variable))
-                                       ((integerp x) (make-intv= x))
-                                       (t (let ((var (make-list-input-variable)))
-                                            (assert! (equalv var x))
-                                            var))))
-                             list))
-                      (rule-card-assoc
-                       (mapcar
-                        #'(lambda (sym)
-                            (append (list sym)
-                                    (mapcar #'(lambda (x) (cdr-assoc x dmg-wordsize-assoc))
-                                            (cdr-assoc sym dmg-sym-assoc))))
-                        (remove-if-not #'and-sym? (mapcar #'car dmgassoc))))
-                      (or-sym-xs-assoc nil)
-                      (term-sym-xs-assoc nil)
-                      (or-and-sym-assoc nil)
-                      (or-sym-domain-assoc nil))
-                  (dolist (x (remove-if-not #'terminal-sym? (mapcar #'car dmg-sym-assoc)))
-                    (setf (cdr-assoc x term-sym-xs-assoc) nil))
-                  (dolist (x (remove-if-not #'or-sym? (mapcar #'car dmg-sym-assoc)))
-                    (let ((and-syms (dmg-and-syms x)))
-                      (let ((cards (remove-duplicates
-                                    (mapcar #'(lambda (y) (cdr-assoc y rule-card-assoc)) 
-                                            (dmg-and-syms x))
-                                    :test #'list-eq
-                                    :from-end t)))
-                        (setf (cdr-assoc x or-and-sym-assoc)
-                              (mapcar
-                               #'(lambda (c)
-                                   (remove-if-not 
-                                    #'(lambda (y) 
-                                        (list-eq c (cdr-assoc y rule-card-assoc))) 
-                                    and-syms))
-                               cards)))))
-                  (dolist (x (remove-if-not #'or-sym? (mapcar #'car dmg-sym-assoc)))
-                    (setf (cdr-assoc x or-sym-domain-assoc) (dmg-sym-domain x)))
-                  (let ((first-var (car vars))
-                        (last-var (last-atom vars)))
-                    (labels
-                        ((csp-variable-name (x) 
-                           (cond ((null x) nil)
-                                 ((screamer::variable? x) (screamer::variable-name x))
-                                 (t x)))
-                         (ordered-partitions-of (list card)
-                           (all-values
-                             (let ((p (an-ordered-partition-of list)))
-                               (unless (and (= (length card) (length p))
-                                            (every
-                                             #'(lambda (x y)
-                                                 (and (or (null (car x))
-                                                          (>= y (car x)))
-                                                      (or (null (cdr x))
-                                                          (<= y (cdr x)))))
-                                             card
-                                             (mapcar #'length p)))
-                                 (fail))
-                               p)))
-                         (maprule (xs r)
-                           (cond
-                            ((null xs) nil)
-                            ((listp r)
-                             (reduce
-                              #'orv
-                              (mapcar
-                               #'(lambda (p)
-                                   (apply
-                                    #'orv
-                                    (mapcar
-                                     #'(lambda (r1)
-                                         (apply
-                                          #'andv
-                                          (mapcar
-                                           #'(lambda (x y) (maprule x y))
-                                           p
-                                           (cdr-assoc r1 dmg-sym-assoc))))
-                                     r)))
-                               xs)))
-                            ((and (terminal-sym? r)
-                                  (not (cdr xs)))
+                  (if print-graph-info
+                      (progn
+                        (print (format nil "~A graph symbols" (length dmgassoc)))
+                        (dolist (x (mapcar #'car dmgassoc))
+                          (print (format nil
+                                         "~A min-wordsize: ~A max-wordsize: ~A"
+                                         x
+                                         (min-wordsize x)
+                                         (max-wordsize x))))))
+                  (let ((vars (funcall-rec
+                               #'(lambda (x) 
+                                   (cond ((null x) nil)
+                                         ((screamer::variable? x) x)
+                                         ((underscore? x) (make-list-input-variable))
+                                         ((integerp x) (make-intv= x))
+                                         (t (let ((var (make-list-input-variable)))
+                                              (assert! (equalv var x))
+                                              var))))
+                               list))
+                        (rule-card-assoc
+                         (mapcar
+                          #'(lambda (sym)
+                              (append (list sym)
+                                      (mapcar #'(lambda (x) (cdr-assoc x dmg-wordsize-assoc))
+                                              (cdr-assoc sym dmg-sym-assoc))))
+                          (remove-if-not #'and-sym? (mapcar #'car dmgassoc))))
+                        (or-sym-xs-assoc nil)
+                        (term-sym-xs-assoc nil)
+                        (or-and-sym-assoc nil)
+                        (or-sym-domain-assoc nil))
+                    (dolist (x (remove-if-not #'terminal-sym? (mapcar #'car dmg-sym-assoc)))
+                      (setf (cdr-assoc x term-sym-xs-assoc) nil))
+                    (dolist (x (remove-if-not #'or-sym? (mapcar #'car dmg-sym-assoc)))
+                      (let ((and-syms (dmg-and-syms x)))
+                        (let ((cards (remove-duplicates
+                                      (mapcar #'(lambda (y) (cdr-assoc y rule-card-assoc)) 
+                                              (dmg-and-syms x))
+                                      :test #'list-eq
+                                      :from-end t)))
+                          (setf (cdr-assoc x or-and-sym-assoc)
+                                (mapcar
+                                 #'(lambda (c)
+                                     (remove-if-not 
+                                      #'(lambda (y) 
+                                          (list-eq c (cdr-assoc y rule-card-assoc))) 
+                                      and-syms))
+                                 cards)))))
+                    (dolist (x (remove-if-not #'or-sym? (mapcar #'car dmg-sym-assoc)))
+                      (setf (cdr-assoc x or-sym-domain-assoc) (dmg-sym-domain x)))
+                    (let ((first-var (car vars))
+                          (last-var (last-atom vars)))
+                      (labels
+                          ((csp-variable-name (x) 
+                             (cond ((null x) nil)
+                                   ((screamer::variable? x) (screamer::variable-name x))
+                                   (t x)))
+                           (ordered-partitions-of (list card)
+                             (all-values
+                               (let ((p (an-ordered-partition-of list)))
+                                 (unless (and (= (length card) (length p))
+                                              (every
+                                               #'(lambda (x y)
+                                                   (and (or (null (car x))
+                                                            (>= y (car x)))
+                                                        (or (null (cdr x))
+                                                            (<= y (cdr x)))))
+                                               card
+                                               (mapcar #'length p)))
+                                   (fail))
+                                 p)))
+                           (maprule (xs r)
                              (cond
-                              ((assoc (car xs) (cdr-assoc r term-sym-xs-assoc))
-                               (cdr-assoc (car xs) (cdr-assoc r term-sym-xs-assoc)))
-                              (t
-                               (setf (cdr-assoc (car xs) (cdr-assoc r term-sym-xs-assoc))                                     
-                                     (cond
-                                                 ;((cdr xs) nil)
-                                      ((or symbol-mode
-                                           (not (numberp r)))
-                                       (equalv (car xs) r))
-                                      (t 
-                                       (=v (car xs) r))))
-                               (cdr-assoc (car xs) (cdr-assoc r term-sym-xs-assoc)))))
-                            ((terminal-sym? r) nil)
-                            ((and-sym? r) 
-                             (print (format nil " WARNING : ~A" r))
-                             (let* ((xs-length (length xs))
-                                    (rcard (cond
-                                            ((and continuation-mode
-                                                  (< xs-length (length (cdr-assoc r rule-card-assoc)))
-                                                  (position last-var xs))
-                                             (subseq (cdr-assoc r rule-card-assoc) 0 xs-length))
-                                            (t
-                                             (cdr-assoc r rule-card-assoc))))
-                                    (rcard-length (length rcard)))
+                              ((null xs) nil)
+                              ((listp r)
+                               (reduce
+                                #'orv
+                                (mapcar
+                                 #'(lambda (p)
+                                     (apply
+                                      #'orv
+                                      (mapcar
+                                       #'(lambda (r1)
+                                           (apply
+                                            #'andv
+                                            (mapcar
+                                             #'(lambda (x y) (maprule x y))
+                                             p
+                                             (cdr-assoc r1 dmg-sym-assoc))))
+                                       r)))
+                                 xs)))
+                              ((and (terminal-sym? r)
+                                    (not (cdr xs)))
                                (cond
-                                ((< xs-length rcard-length)
-                                 nil)
-                                (t 
-                                 (let* ((xs-partitions (ordered-partitions-of xs rcard))
-                                        (next-syms
-                                         (cond
-                                          ((and (= (length xs) 1)
-                                                continuation-mode
-                                                (eq (car xs) last-var))
-                                           (remove-if #'or-sym? (cdr-assoc r dmg-sym-assoc)))
-                                          (t (cdr-assoc r dmg-sym-assoc)))))
-                                   (unless (null xs-partitions)
-                                     (let ((vs (mapcar
-                                                #'(lambda (p) ; ordered partition of xs
-                                                    (apply 
-                                                     #'andv
-                                                     (mapcar
-                                                      #'(lambda (x y) (maprule x y))
-                                                      p
-                                                      next-syms)))
-                                                xs-partitions)))
-                                       (if (> (length xs-partitions) 1)
-                                           (reduce #'orv vs)
-                                         (car vs)))))))))
-                            ((or-sym? r)
-                             (cond ((cdr xs)
-                                    (apply
-                                     #'orv
-                                     (mapcar
-                                      #'(lambda (x) (maprule (ordered-partitions-of xs (cdr-assoc (car x) rule-card-assoc)) x))
-                                      (cdr-assoc r or-and-sym-assoc))))
-                                   (t 
-                                    (let ((existing-var (find (cons r xs) or-sym-xs-assoc :key #'car :test #'list-eq)))
-                                      (cond (existing-var (cadr existing-var))
-                                            (t 
-                                             (let ((var (reduce 
-                                                         #'orv
-                                                         (mapcar
-                                                          #'(lambda (term) (maprule xs term))
-                                                          (cdr-assoc r or-sym-domain-assoc)))))
-                                               (push (list (cons r xs) var) or-sym-xs-assoc)
-                                               var)))))))
-                            (t nil))))
-                      (values (andv (all-memberv vars terminals)
-                                    (maprule vars (name dmg))) 
-                              vars                                                                                 
-                              dmg)))))))))))))
+                                ((assoc (car xs) (cdr-assoc r term-sym-xs-assoc))
+                                 (cdr-assoc (car xs) (cdr-assoc r term-sym-xs-assoc)))
+                                (t
+                                 (setf (cdr-assoc (car xs) (cdr-assoc r term-sym-xs-assoc))                                     
+                                       (cond
+                                                 ;((cdr xs) nil)
+                                        ((or symbol-mode
+                                             (not (numberp r)))
+                                         (equalv (car xs) r))
+                                        (t 
+                                         (=v (car xs) r))))
+                                 (cdr-assoc (car xs) (cdr-assoc r term-sym-xs-assoc)))))
+                              ((terminal-sym? r) nil)
+                              ((and-sym? r) 
+                               (print (format nil " WARNING : ~A" r))
+                               (let* ((xs-length (length xs))
+                                      (rcard (cond
+                                              ((and continuation-mode
+                                                    (< xs-length (length (cdr-assoc r rule-card-assoc)))
+                                                    (position last-var xs))
+                                               (subseq (cdr-assoc r rule-card-assoc) 0 xs-length))
+                                              (t
+                                               (cdr-assoc r rule-card-assoc))))
+                                      (rcard-length (length rcard)))
+                                 (cond
+                                  ((< xs-length rcard-length)
+                                   nil)
+                                  (t 
+                                   (let* ((xs-partitions (ordered-partitions-of xs rcard))
+                                          (next-syms
+                                           (cond
+                                            ((and (= (length xs) 1)
+                                                  continuation-mode
+                                                  (eq (car xs) last-var))
+                                             (remove-if #'or-sym? (cdr-assoc r dmg-sym-assoc)))
+                                            (t (cdr-assoc r dmg-sym-assoc)))))
+                                     (unless (null xs-partitions)
+                                       (let ((vs (mapcar
+                                                  #'(lambda (p) ; ordered partition of xs
+                                                      (apply 
+                                                       #'andv
+                                                       (mapcar
+                                                        #'(lambda (x y) (maprule x y))
+                                                        p
+                                                        next-syms)))
+                                                  xs-partitions)))
+                                         (if (> (length xs-partitions) 1)
+                                             (reduce #'orv vs)
+                                           (car vs)))))))))
+                              ((or-sym? r)
+                               (cond ((cdr xs)
+                                      (apply
+                                       #'orv
+                                       (mapcar
+                                        #'(lambda (x) (maprule (ordered-partitions-of xs (cdr-assoc (car x) rule-card-assoc)) x))
+                                        (cdr-assoc r or-and-sym-assoc))))
+                                     (t 
+                                      (let ((existing-var (find (cons r xs) or-sym-xs-assoc :key #'car :test #'list-eq)))
+                                        (cond (existing-var (cadr existing-var))
+                                              (t 
+                                               (let ((var (reduce 
+                                                           #'orv
+                                                           (mapcar
+                                                            #'(lambda (term) (maprule xs term))
+                                                            (cdr-assoc r or-sym-domain-assoc)))))
+                                                 (push (list (cons r xs) var) or-sym-xs-assoc)
+                                                 var)))))))
+                              (t nil))))
+                        (values (andv (all-memberv vars terminals)
+                                      (maprule vars (name dmg))) 
+                                vars                                                                                 
+                                dmg)))))))))))))
 
 (defstruct (dmg-cursor (:conc-name nil) (:print-function print-dmg-cursor)) label sym stack rules)
 
 (defvar *mapprules-default-input-process-increment* 4)
-(cl:defun mapprules (input 
-                     prules 
-                     &key input-process-increment
-                          continue
-                          init
-                          listdxx
-                          max
-                          min
-                          ordered-partitions-nondeterministic-values-cap
-                          superset
-                          symbol-mode
-                          params)
+(define-box mapprules (input
+                       prules 
+                       &key process-chunk-size
+                            input-process-increment
+                            continue
+                            init
+                            listdxx
+                            max
+                            min
+                            ordered-partitions-nondeterministic-values-cap
+                            superset
+                            symbol-mode
+                            params
+                            print-graph-info)
+  :outputs 3
+  :indoc '("input template list, screamer variable list or number" 
+           "production rules"
+           "process-chunk-size"
+           "input-process-increment (use process-chunk-size)"
+           "continue"
+           "init"
+           "listdxx"
+           "max"
+           "min"
+           "ordered-partitions-nondeterministic-values-cap"
+           "superset"
+           "symbol-mode"
+           "params"
+           "print-graph-info")
+  :icon 324
+  :doc 
+"reads a template list and a list of production rules, of the form S -> w where S is a nonterminal symbol and w is a sequence of terminal or nonterminal symbols, and attempts to express every possible combination of symbols that fit the template:
+(all-values (solution (mapprules '(_ _ _ _ _)
+                                 '((:S x)
+                                   (:S y)
+                                   (:S :S + :S)
+				   (:S :S - :S)
+                                   (:S [ :S ]))
+                                   :symbol-mode t)
+                      (static-ordering #'linear-force))) =
+(([ [ y ] ]) ([ [ x ] ]) ([ y ] - y) ([ y ] - x) ([ y ] + y) ([ y ] + x) ([ y - y ]) ([ y - x ]) ([ y + y ]) ([ y + x ]) ([ x ] - y) ([ x ] - x) ([ x ] + y) ([ x ] + x) ([ x - y ]) ([ x - x ]) ([ x + y ]) ([ x + x ]) (y - [ y ]) (y - [ x ]) (y - y - y) (y - y - x) (y - y + y) (y - y + x) (y - x - y) (y - x - x) (y - x + y) (y - x + x) (y + [ y ]) (y + [ x ]) (y + y - y) (y + y - x) (y + y + y) (y + y + x) (y + x - y) (y + x - x) (y + x + y) (y + x + x) (x - [ y ]) (x - [ x ]) (x - y - y) (x - y - x) (x - y + y) (x - y + x) (x - x - y) (x - x - x) (x - x + y) (x - x + x) (x + [ y ]) (x + [ x ]) (x + y - y) (x + y - x) (x + y + y) (x + y + x) (x + x - y) (x + x - x) (x + x + y) (x + x + x))
+
+(all-values (solution (mapprules '([ _ _ _ _)
+                                 '((:S x)
+                                   (:S y)
+                                   (:S :S + :S)
+				   (:S :S - :S)
+                                   (:S [ :S ]))
+                                   :symbol-mode t)
+                      (static-ordering #'linear-force))) = 
+ (([ [ y ] ]) ([ [ x ] ]) ([ y ] - y) ([ y ] - x) ([ y ] + y) ([ y ] + x) ([ y - y ]) ([ y - x ]) ([ y + y ]) ([ y + x ]) ([ x ] - y) ([ x ] - x) ([ x ] + y) ([ x ] + x) ([ x - y ]) ([ x - x ]) ([ x + y ]) ([ x + x ]))
+
+Graph representation of context-free grammars
+Alex Shkotin arXiv:cs/0703015 http://arxiv.org/abs/cs/0703015
+
+ jan 2013" 
   (assert (not (and symbol-mode listdxx)))
+  (if (and (null process-chunk-size) input-process-increment)
+      (setf process-chunk-size input-process-increment))
   (labels
       ((init-label (string)
          (cond ((not (stringp string)) (init-label (write-to-string string)))
@@ -356,7 +421,7 @@
          (let ((xS (init-label x))
                (yS (init-label y)))
            (string= xS yS)))
-       (underscore? (x) (symeq x "_"))
+       (underscore? (x) (or (symeq x "_") (symeq x "t2l::_")))
        (atom->var (x)
          (cond ((null x) nil) 
                ((screamer::variable? x) x)
@@ -371,12 +436,12 @@
                   (assert! (equalv v x))
                   v))))
        (process-increment-adjusted-length (length) 
-         (if input-process-increment
-             (* (ceiling (/ length (if (numberp input-process-increment)
-                                       input-process-increment
+         (if process-chunk-size
+             (* (ceiling (/ length (if (numberp process-chunk-size)
+                                       process-chunk-size
                                      *mapprules-default-input-process-increment*)))
-                (if (numberp input-process-increment)
-                    input-process-increment
+                (if (numberp process-chunk-size)
+                    process-chunk-size
                   *mapprules-default-input-process-increment*))
            length))
        (make-input-sequence (length)
@@ -392,7 +457,7 @@
              (list-vars-flat-subseq (if init
                                         (append (list init) (remove nil (flat list-vars)))
                                       (remove nil (flat list-vars))))
-             (list-vars-flat (if (and input-process-increment
+             (list-vars-flat (if (and process-chunk-size
                                       (< (length list-vars-flat-subseq) (process-increment-adjusted-length (length list-vars-flat-subseq))))
                                  (append list-vars-flat-subseq 
                                          (mapcar #'atom->var (make-sequence 'list (- (process-increment-adjusted-length (length list-vars-flat-subseq)) (length list-vars-flat-subseq)) :initial-element '_)))
@@ -400,7 +465,8 @@
              (map-fn-input (if listdxx
                                (listdxv (append list-vars-flat (list (atom->var '_))))
                              list-vars-flat))
-             (c nil))        
+             (c nil)
+             (chunk-dmg-list nil))        
 
         (if (not symbol-mode)
             (progn 
@@ -409,40 +475,34 @@
         (if superset (push (reduce-chunks #'andv (mapcar #'(lambda (x) (memberv x superset)) list-vars-flat) :default t) c))
 
         (cond
-         (input-process-increment
-          (let ((n (if (numberp input-process-increment) 
-                       input-process-increment
+         (process-chunk-size
+          (let ((n (if (numberp process-chunk-size) 
+                       process-chunk-size
                      *mapprules-default-input-process-increment*)))
-            (let ((map-fn-input-chunks (nsucc map-fn-input n :step (1- n))))
+            (let ((map-fn-input-chunks (let ((nsucc (nsucc map-fn-input n :step (1- n))))
+                                         (cond ((and (> (length nsucc) 1)
+                                                     (= (length (car (reverse nsucc))) 1))
+                                                (butlast nsucc))
+                                               (t
+                                                nsucc)))))
+              (if (>= *mess* 5) (print (format nil "map-fn-input-chunks: ~A" map-fn-input-chunks)))
               (let (incs)
                 (dotimes (i (length map-fn-input-chunks))
                   (multiple-value-bind
-                      (mvar list)
+                      (mvar list dmg)
                       (mapprules-internal (elt map-fn-input-chunks i)
                                           prules
                                           :continuation-mode continue
                                           :symbol-mode symbol-mode
                                           :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
-                                          :params params)
-                    (lprint 'list list)
+                                          :params params
+                                          :print-graph-info print-graph-info)
+                    
                     (push mvar c)
-                    #|(cond
-                     (incs
-                      (push (cond 
-                             (symbol-mode
-                              (equalv (car list) (last-atom (car incs))))
-                             (t
-                              (=v (car list) (last-atom (car incs)))))
-                            c)
-                      (push (cdr list) incs))
-                     (t
-                      (push list incs)))|#))
-                (cond ((numberp input)
-                       (assert! (reduce-chunks #'andv c :default t))
-                       (subseq list-vars 0 input))
-                      (t
-                       (values (reduce-chunks #'andv c :default t)
-                               list-vars)))))))
+                    (push dmg chunk-dmg-list)))
+                (values (reduce-chunks #'andv c :default t)
+                        list-vars
+                        (car chunk-dmg-list))))))
          (t 
           (multiple-value-bind 
               (var list dmg)
@@ -451,7 +511,8 @@
                                   :continuation-mode continue
                                   :symbol-mode symbol-mode
                                   :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
-                                  :params params) 
+                                  :params params
+                                  :print-graph-info print-graph-info) 
             (values var list-vars dmg)))))))))
               
 ;; screamer+ macro Copyright 1998-2000 University of Aberdeen 
@@ -535,8 +596,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
    (ith-value (a-random-member-of (arithm-ser 0 n 1))
               expression)))
 
-(defun om-assert! (&rest sequence)
-  (if (cdr sequence) (dolist (x (butlast sequence)) (assert! x)))
+(define-box om-assert! (&rest sequence)
+  :icon 161
+  ;(if (cdr sequence) (dolist (x (butlast sequence)) (assert! x)))
+  (if (cdr sequence)
+      (assert! (apply #'andv (butlast sequence))))
   (car (reverse sequence)))
 
 (defun xorv (&rest xs)
@@ -660,19 +724,25 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
   (let ((vars (flat x)))
     (orv (apply #'<=v vars)
          (apply #'>=v vars))))
-(defun all-betweenv (x min max)
-  (let ((flat (flat x)))
+(define-box all-betweenv (x min max)
+  :icon 324
+  (let ((flat (remove-duplicates (remove nil (flat x)))))
     (andv (apply #'andv (mapcar #'(lambda (y) (>=v y min)) flat))
           (apply #'andv (mapcar #'(lambda (y) (<=v y max)) flat)))))
-(defun all/=v (x)
+(define-box all/=v (x)
+  :icon 324
   (reduce-chunks #'/=v (flat x)))
-(defun all=v (x)
+(define-box all=v (x)
+  :icon 324
   (reduce-chunks #'=v (flat x)))
-(defun all-andv (x)
+(define-box all-andv (x)
+  :icon 324
   (reduce-chunks #'andv (flat x)))
-(defun all-orv (x)
+(define-box all-orv (x)
+  :icon 324
   (reduce-chunks #'orv (flat x)))
-(defun all-memberv (e sequence)
+(define-box all-memberv (e sequence)
+  :icon 324
   (let ((sequence-flat (flat sequence)))
     (cond ((listp e) (reduce-chunks #'andv (mapcar #'(lambda (x) (memberv x sequence-flat)) (flat e))))
           (t (memberv e sequence-flat)))))
@@ -682,7 +752,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 (defun a-random-member-ofv (list)
   (a-member-ofv (permut-random list)))
 
-(defun om-count-truesv (list)
+(define-box om-count-truesv (list)
   (apply #'count-truesv list))
 
 (defun real-absv (k)
@@ -691,12 +761,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
                   (=v m (*v -1 k))))
     (assert! (>=v m 0))
     m))
-(defun real-abs-v (k)
+#|(defun real-abs-v (k)
   (let ((m (a-realv)))
     (assert! (orv (=v m k)
                   (=v m (*v -1 k))))
     (assert! (<=v m 0))
-    m))
+    m))|#
 
 (defun integer-absv (k)
   (let ((m (an-integerv)))
@@ -704,12 +774,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
                   (=v m (*v -1 k))))
     (assert! (>=v m 0))
     m))
-(defun integer-abs-v (k)
+#|(defun integer-abs-v (k)
   (let ((m (an-integerv)))
     (assert! (orv (=v m k)
                   (=v m (*v -1 k))))
     (assert! (<=v m 0))
-    m))
+    m))|#
 
 
 (defun absv (k)
@@ -718,16 +788,25 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
                   (equalv m (*v -1 k))))
     (assert! (>=v m 0))
     m))
-(defun abs-v (k)
+#|(defun abs-v (k)
   (let ((m (a-numberv)))
     (assert! (orv (equalv m k)
                   (equalv m (*v -1 k))))
     (assert! (<=v m 0))
-    m))
-(defun modv (n d)
+    m))|#
+(defun %v (n d)
+  (assert! (integerpv n))
+  (assert! (integerpv d))
+  (let ((g (-v n (*v d (an-integerv)))))
+    (assert! (>=v g 0))
+    (assert! (<v g d))
+    g))
+#|(defun modv (n d)
   (let ((m (an-integer-betweenv 0 (-v d 1))))
     (assert! (=v m (funcallv #'mod n d)))
-    m))
+    m))|#
+(defun modv (n d)
+  (%v n d))
 (defun powv (a b)
   (let ((c (a-realv)))
     (assert! (=v c (funcallv #'pow a b)))
