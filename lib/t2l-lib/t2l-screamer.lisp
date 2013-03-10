@@ -382,32 +382,6 @@
            "params"
            "print-graph-info")
   :icon 324
-  :doc 
-"reads a template list and a list of production rules, of the form S -> w where S is a nonterminal symbol and w is a sequence of terminal or nonterminal symbols, and attempts to express every possible combination of symbols that fit the template:
-(all-values (solution (mapprules '(_ _ _ _ _)
-                                 '((:S x)
-                                   (:S y)
-                                   (:S :S + :S)
-				   (:S :S - :S)
-                                   (:S [ :S ]))
-                                   :symbol-mode t)
-                      (static-ordering #'linear-force))) =
-(([ [ y ] ]) ([ [ x ] ]) ([ y ] - y) ([ y ] - x) ([ y ] + y) ([ y ] + x) ([ y - y ]) ([ y - x ]) ([ y + y ]) ([ y + x ]) ([ x ] - y) ([ x ] - x) ([ x ] + y) ([ x ] + x) ([ x - y ]) ([ x - x ]) ([ x + y ]) ([ x + x ]) (y - [ y ]) (y - [ x ]) (y - y - y) (y - y - x) (y - y + y) (y - y + x) (y - x - y) (y - x - x) (y - x + y) (y - x + x) (y + [ y ]) (y + [ x ]) (y + y - y) (y + y - x) (y + y + y) (y + y + x) (y + x - y) (y + x - x) (y + x + y) (y + x + x) (x - [ y ]) (x - [ x ]) (x - y - y) (x - y - x) (x - y + y) (x - y + x) (x - x - y) (x - x - x) (x - x + y) (x - x + x) (x + [ y ]) (x + [ x ]) (x + y - y) (x + y - x) (x + y + y) (x + y + x) (x + x - y) (x + x - x) (x + x + y) (x + x + x))
-
-(all-values (solution (mapprules '([ _ _ _ _)
-                                 '((:S x)
-                                   (:S y)
-                                   (:S :S + :S)
-				   (:S :S - :S)
-                                   (:S [ :S ]))
-                                   :symbol-mode t)
-                      (static-ordering #'linear-force))) = 
- (([ [ y ] ]) ([ [ x ] ]) ([ y ] - y) ([ y ] - x) ([ y ] + y) ([ y ] + x) ([ y - y ]) ([ y - x ]) ([ y + y ]) ([ y + x ]) ([ x ] - y) ([ x ] - x) ([ x ] + y) ([ x ] + x) ([ x - y ]) ([ x - x ]) ([ x + y ]) ([ x + x ]))
-
-Graph representation of context-free grammars
-Alex Shkotin arXiv:cs/0703015 http://arxiv.org/abs/cs/0703015
-
- jan 2013" 
   (assert (not (and symbol-mode listdxx)))
   (if (and (null process-chunk-size) input-process-increment)
       (setf process-chunk-size input-process-increment))
@@ -464,16 +438,12 @@ Alex Shkotin arXiv:cs/0703015 http://arxiv.org/abs/cs/0703015
                                list-vars-flat-subseq))
              (map-fn-input (if listdxx
                                (listdxv (append list-vars-flat (list (atom->var '_))))
-                             list-vars-flat))
-             (c nil)
-             (chunk-dmg-list nil))        
-
+                             list-vars-flat)))
         (if (not symbol-mode)
             (progn 
               (if min (push (reduce-chunks #'andv (mapcar #'(lambda (x) (>=v x min)) list-vars-flat) :default t) c))
               (if max (push (reduce-chunks #'andv (mapcar #'(lambda (x) (<=v x max)) list-vars-flat) :default t) c))))
         (if superset (push (reduce-chunks #'andv (mapcar #'(lambda (x) (memberv x superset)) list-vars-flat) :default t) c))
-
         (cond
          (process-chunk-size
           (let ((n (if (numberp process-chunk-size) 
@@ -485,24 +455,23 @@ Alex Shkotin arXiv:cs/0703015 http://arxiv.org/abs/cs/0703015
                                                 (butlast nsucc))
                                                (t
                                                 nsucc)))))
-              (if (>= *mess* 5) (print (format nil "map-fn-input-chunks: ~A" map-fn-input-chunks)))
-              (let (incs)
-                (dotimes (i (length map-fn-input-chunks))
-                  (multiple-value-bind
-                      (mvar list dmg)
-                      (mapprules-internal (elt map-fn-input-chunks i)
-                                          prules
-                                          :continuation-mode continue
-                                          :symbol-mode symbol-mode
-                                          :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
-                                          :params params
-                                          :print-graph-info print-graph-info)
-                    
-                    (push mvar c)
-                    (push dmg chunk-dmg-list)))
-                (values (reduce-chunks #'andv c :default t)
-                        list-vars
-                        (car chunk-dmg-list))))))
+              (if (>= *mess* 5) (print (format nil "map-fn-input-chunks: ~A" map-fn-input-chunks)))              
+              (let ((var-input-dmg-list 
+                     (maplist
+                      #'(lambda (chunks)
+                          (if (>= *mess* 5) (print (format nil "mapprules: chunk ~A / ~A" (1+ (- (length map-fn-input-chunks) (length chunks))) (length map-fn-input-chunks))))
+                          (multiple-value-list
+                           (mapprules-internal (car chunks)
+                                               prules
+                                               :continuation-mode t
+                                               :symbol-mode symbol-mode
+                                               :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
+                                               :params params
+                                               :print-graph-info print-graph-info)))
+                      map-fn-input-chunks)))
+                (values (apply #'andv (mapcar #'car var-input-dmg-list))
+                        (cadar var-input-dmg-list)
+                        (caddar var-input-dmg-list))))))
          (t 
           (multiple-value-bind 
               (var list dmg)
@@ -598,9 +567,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 
 (define-box om-assert! (&rest sequence)
   :icon 161
-  ;(if (cdr sequence) (dolist (x (butlast sequence)) (assert! x)))
-  (if (cdr sequence)
-      (assert! (apply #'andv (butlast sequence))))
+  (if (cdr sequence) (dolist (x (butlast sequence)) (assert! x)))
+  ;(if (cdr sequence)
+  ;    (assert! (apply #'andv (butlast sequence))))
   (car (reverse sequence)))
 
 (defun xorv (&rest xs)
@@ -622,6 +591,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 (defun om-solution (x &optional force-function)
   (solution x (cond ((null force-function)
                      (static-ordering #'linear-force))
+                    ((string= (write-to-string force-function) "plf")
+                     (static-ordering #'print-linear-force))
                     ((or (functionp force-function)
                          (screamer::nondeterministic-function? force-function))
                      (if (>= *mess* 10) 
@@ -661,6 +632,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
                               #'(lambda (x) (declare (ignore x)) nil)
                               #'<
                               #'divide-and-conquer-force))
+                    ((or (string= (write-to-string force-function) "print-reorder-domain-size-divide-and-conquer-force")
+                         (string= (write-to-string force-function) "prodsdacf")
+                         (string= (write-to-string force-function) "print-reorder-dacf"))
+                     (if (>= *mess* 10) 
+                         (lprint 'om-solution "reordering force-function: divide-and-conquer-force fn"))
+                     (reorder #'domain-size
+                              #'(lambda (x) (declare (ignore x)) nil)
+                              #'<
+                              #'print-divide-and-conquer-force))
                     (t
                      (if (>= *mess* 10) 
                          (lprint 'om-solution "static-ordering force-function: linear-force fn"))
@@ -698,10 +678,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 (defun list-meanv (list)
   (/v (sumv (mapcar #'(lambda (x) (make-realv= x)) list))
       (make-realv= (length list))))
-
+(defun lists=v (list1 list2 &optional symbol-mode)
+  (apply #'andv
+         (mapcar #'(lambda (a b) (=v a b))
+                 list1
+                 list2)))
 (defun list-boolean-opv (fn x value)
   (let ((input (flat x)))
     (reduce #'andv (mapcar #'(lambda (y) (funcall fn y value)) input))))
+(defun list-binary-opv (fn x value)
+  (mapcar #'(lambda (y) (funcall fn y value)) x))
+(defun list+v (x value) (list-binary-opv #'+v x value))
+(defun list-v (x value) (list-binary-opv #'-v x value))
+(defun list*v (x value) (list-binary-opv #'*v x value))
+(defun list/v (x value) (list-binary-opv #'/v x value))
 (defun list<v (x value) (list-boolean-opv #'<v x value))
 (defun list<=v (x value) (list-boolean-opv #'<=v x value))
 (defun list>v (x value) (list-boolean-opv #'>v x value))
@@ -2217,9 +2207,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
         (fail)
       r)))
 
-(defun a-permutation-of (x) 
-  (let ((a (a-member-of x)))
-    (append (list a) (takeout a x))))
+(defun a-permutation-of (list)
+  (if (null list)
+      nil
+    (let ((i (an-integer-between 0 (1- (length list)))))
+      (append (list (elt list i))
+              (a-permutation-of 
+               (append (subseq list 0 i)
+                       (subseq list (1+ i) (length list))))))))
+
+(defun a-permutation-ofv (list &key symbol-mode)
+  (let ((vars (mapcar #'(lambda (x) 
+                          (let ((v (an-integerv)))
+                            (assert! (memberv v list))
+                            v))
+                      list))
+        (perms (all-values (a-permutation-of list))))
+    (assert! (reduce-chunks 
+              #'orv                            
+              (mapcar #'(lambda (p) (lists=v p vars))
+                      perms)))
+    vars))
 
 (defun takeout (x y &key (test #'list-eq))
   (cond ((not (position x y :test test)) y)
@@ -2389,13 +2397,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
       (if predicate (funcall predicate l))
       l)))
 
-(defun print-divide-and-conquer-force (variable)
-  (if (>= *mess* 60) (lprint 'divide-and-conquer-force 'variable variable))
-  (divide-and-conquer-force variable))
+(defun print-divide-and-conquer-force (x)
+  "print messages when t2l::*mess* >= 30"
+  (if (>= *mess* 30) (print (format nil "divide-and-conquer-force IN: ~A" x)))
+  (let ((y (linear-force x)))
+    (if (>= *mess* 30) (print (format nil "divide-and-conquer-force OUT: ~A" y)))
+    y))
 
 (defun print-linear-force (x)
-  (if (>= *mess* 60) (lprint 'divide-and-conquer-force 'variable variable))
-  (linear-force x))
+  "print messages when t2l::*mess* >= 30"
+  (if (>= *mess* 30) (print (format nil "linear-force IN: ~A" x)))
+  (let ((y (linear-force x)))
+    (if (>= *mess* 30) (print (format nil "linear-force OUT: ~A" y)))
+    y))
 
 (defun print-screamer-info (arg)
   (lprint 'screamer-version *screamer-version*)

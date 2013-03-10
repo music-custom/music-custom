@@ -138,8 +138,10 @@
     Nil
     Nil
     (jjf-1st-species1
+     list-nsucc<>v
      listdx-similarity-var
      modal-xposn-containing
+     pcsets=v
      print-seqcx-ival-lists
      seqc-list-gap-memberv
      seqc-list-gap-vars
@@ -154,11 +156,12 @@
      seqc-ms-ratios>=v
      seqc-ms-ratios>v
      seqc-ms-signatures-mapv
+     seqc-xl-ival-members-var
+     seqc-xl-pcsets=v
      seqcx-ival-abovev
      seqcx-ival-belowv
      seqcx-ival-betweenv
      seqcx-ival-countv
-     seqc-xl-ival-members-var
      unify-modes-with-seqc-listv
      unify-modes-with-seqc-xpos-list) 
     Nil)

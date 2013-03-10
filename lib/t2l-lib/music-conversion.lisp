@@ -1,33 +1,67 @@
 (in-package :t2l)
 
-(defun jjf-1st-species1 (cf &optional mode) 
-  (let* ((v (mapcar #'(lambda (x) (an-integer-betweenv 1 127)) cf))
-         (seqc (list v cf))
-         (ivals (mapcar #'(lambda (x) (-v (car x) (cadr x))) (mat-trans seqc)))
-         (hivls (remove nil (maplist #'(lambda (x) (if (cdr x) (-v (car x) (cadr x)) nil)) v)))
-         (mode0127 (if mode (set->midic0127 mode))))
-    (if mode0127
-        (progn 
-          (mapcar #'(lambda (x) (assert! (memberv x mode0127))) cf)          
-          (mapcar #'(lambda (x) (assert! (memberv x mode0127))) v)))
-    (assert! (memberv (car v) (list (car cf)
-                                    (+v (car cf) 7)
-                                    (+v (car cf) 12))))
-    (mapcar #'(lambda (x) (assert! (memberv (integer-absv x) '(1 2 3 4 5)))) hivls)
-    (mapcar #'(lambda (x) (assert! (>=v x 0))) (list (car ivals) (car (reverse ivals))))
-    (mapcar #'(lambda (x) (assert! (memberv x '(3 4 5 7 8 9 15)))) (subseq ivals 1 (1- (length ivals))))
-    (mapcar #'(lambda (x) (assert! (notv (=v (modv x 12) 0)))) (subseq ivals 1 (1- (length ivals))))
-    (mapcar #'(lambda (x) (assert! (<=v x 16))) ivals)
-    (maplist #'(lambda (x) (if (cdr x) (assert! (notv (=v (car x) (cadr x)))))) v)
-    (maplist #'(lambda (x) 
-                 (if (cdr x)
-                     (progn 
-                       (assert! (notv (andv (=v 7 (modv (car x) 12)) (=v 7 (modv (cadr x) 12)))))
-                       (assert! (notv (andv (=v 0 (modv (car x) 12)) (=v 0 (modv (cadr x) 12)))))))) ivals)
-    ;(mapcar #'(lambda (x) (assert! (memberv x '(3 4 5 7 8 9)))) ivals)
-    (assert! (=v (car (reverse ivals)) 12))
-    (assert! (memberv (-v (car (reverse v)) (cadr (reverse v))) '(2 1 -1 -2)))
-    seqc))    
+
+(define-box pcsets=v ((set1 (0 4 7)) (set2 (60 64 67)))
+  :icon 324
+  (labels
+      ((list->m12 (list)
+         (mapcar #'(lambda (x) (modv x 12))
+                 list))
+       (sorted-permutations-of (list)
+         (all-values (let ((ps (a-permutation-of list)))
+                       (unless (possibly? 
+                                 (assert! (apply #'<=v ps))
+                                 t)
+                         (fail))
+                       ps)))
+       (rotatem12 (list i)
+         (let ((rs (rotate list i)))
+           (list->m12 (list-v rs (car rs)))))
+       (all-rotations-of (list) 
+         (mapcar #'(lambda (x) (rotatem12 list x))
+                 (arithm-ser 0 (1- (length list)) 1))))
+    (let ((set1m12 #'(lambda (x) (modv x 12)) set1)
+          (set2m12 #'(lambda (x) (modv x 12)) set2))
+      (let ((ps1 (mapcar #'all-rotations-of (sorted-permutations-of set1m12)))
+            (ps2 (mapcar #'all-rotations-of (sorted-permutations-of set2m12))))
+        (reduce-chunks
+         #'orv
+         (mapcar
+          #'(lambda (a)
+              (reduce-chunks
+               #'orv
+               (mapcar
+                #'(lambda (b)
+                    (reduce-chunks
+                     #'orv
+                     (mapcar 
+                      #'(lambda (c)
+                          (reduce-chunks
+                           #'orv
+                           (mapcar #'(lambda (d) (lists=v b d)) c)))
+                      ps2)))                
+               a)))
+          ps1))))))
+
+(define-box seqc-xl-pcsets=v ((seqc ((60 60 60)
+                                     (64 64 64)
+                                     (67 67 67)))
+                              (sets ((0 3 5) 
+                                     (0 4 7)
+                                     (0 2 5))))
+  :icon 324
+  (reduce-chunks
+   #'andv
+   (mapcar
+    #'(lambda (x)
+        (reduce-chunks
+         #'orv
+         (mapcar #'(lambda (y) (pcsets=v x y)) sets)))
+    (mat-trans (flatten-seqc seqc)))))
+
+(define-box list-nsucc<>v (list step)
+  :icon 324
+  (apply #'andv (mapcar #'all<>v (nsucc list step))))
 
 (define-box ratio-divisibility-var (ratios &optional (d (2 3)))
   :icon 324
@@ -44,14 +78,10 @@
   :icon 324
   :doc ""
   (let ((pairs (remove-duplicates  
-                (remove-if #'(lambda (xs) (or (null xs)
-                                              (position nil xs)
-                                              (eq (car xs) (cadr xs))))
-                           (flat1
-                            (mapcar 
-                             #'(lambda (xs)
-                                 (cartesian-product xs xs))
-                             (mat-trans (flatten-seqc (remove nil list))))))
+                (flat1
+                 (mapcar 
+                  #'(lambda (xs) (nPr xs 2))
+                  (mat-trans (flatten-seqc (remove nil list)))))
                 :test #'set-difference-eq)))
     (if (>= *mess* 33) (lprint 'seqc-xl-ival-members-var 'pairs pairs))
     (let ((ivs (mapcar #'(lambda (xs)
@@ -107,27 +137,30 @@
   :indoc '("" "" )
   :icon 324
   :doc "" 
-  (apply #'andv (mapcar #'(lambda (xs) (seqcx-ival-countv-internal xs ival-assoc)) (nsucc (mat-trans (flatten-seqc  (remove nil seqc))) 128 :step 128))))
+  (assert (< (apply #'max (mapcar #'car ival-assoc)) 7))
+  (seqcx-ival-countv-internal (mat-trans (flatten-seqc seqc)) ival-assoc))
+   #|(mapcar 
+    #'(lambda (xs) (seqcx-ival-countv-internal xs ival-assoc)) 
+    (nsucc (mat-trans (flatten-seqc  (remove nil seqc))) 128 :step 128))))|#
 
 (defun seqcx-ival-countv-internal (seqc-xl ival-assoc)
   (if (or (null seqc-xl) (= (length (car seqc-xl)) 1))
       t    
-    (let ((interval-vars (mapcar 
-                          #'(lambda (list)
-                              (let ((pairs (nPr list 2)))
-                                (remove nil (mapcar
-                                             #'(lambda (x) 
-                                                 (ifv (orv (equalv (car x) nil) (equalv (cadr x) nil))
-                                                      nil
-                                                   (modv (-v (cadr x) (car x)) 12)))
-                                             pairs))))
-                          seqc-xl))
-          (nP2-count (nPr (length (car seqc-xl)) 2)))
+    (let* ((pairs (remove-duplicates
+                   (flat1 (mapcar #'(lambda (x) (nPr x 2)) seqc-xl))
+                   :test #'set-difference-eq))
+           (ivs (remove nil (mapcar 
+                             #'(lambda (x) 
+                                 (cond ((or (null x)
+                                            (null (car x))
+                                            (null (cadr x)))
+                                        nil)
+                                       (t (modv (-v (car x) (cadr x)) 12))))
+                             pairs))))
       (cond 
-       ((null interval-vars) t)
+       ((null ivs) t)
        (t 
-        (assert (< (apply #'max (mapcar #'car ival-assoc)) 7))
-        (let* ((seqc-ivals (flat interval-vars))
+        (let* ((seqc-ivals (flat ivs))
                (targets (mapcar
                          #'(lambda (i) (let ((c (cdr-assoc i ival-assoc)))
                                          (cond ((null c) nil)
@@ -140,17 +173,17 @@
                              ((null (elt targets i)) nil)
                              ;; to stay within Lispworks CALL-ARGUMENTS-LIMIT of 2047 this is processed in chunks
                              ((= i 1)
-                              (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (orv (equalv y 1) (equalv y 11))) x))) (nsucc seqc-ivals 512 :step 512))))
+                              (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (orv (=v y 1) (=v y 11))) x))) (nsucc seqc-ivals 512 :step 512))))
                              ((= i 2)
-                              (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (orv (equalv y 2) (equalv y 10))) x))) (nsucc seqc-ivals 512 :step 512))))
+                              (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (orv (=v y 2) (=v y 10))) x))) (nsucc seqc-ivals 512 :step 512))))
                              ((= i 3)
-                              (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (orv (equalv y 3) (equalv y 9))) x))) (nsucc seqc-ivals 512 :step 512))))
+                              (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (orv (=v y 3) (=v y 9))) x))) (nsucc seqc-ivals 512 :step 512))))
                              ((= i 4)
-                              (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (orv (equalv y 4) (equalv y 8))) x))) (nsucc seqc-ivals 512 :step 512))))
+                              (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (orv (=v y 4) (=v y 8))) x))) (nsucc seqc-ivals 512 :step 512))))
                              ((= i 5)
-                              (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (orv (equalv y 5) (equalv y 7))) x))) (nsucc seqc-ivals 512 :step 512))))
+                              (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (orv (=v y 5) (=v y 7))) x))) (nsucc seqc-ivals 512 :step 512))))
                              (t
-                              (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (equalv y i)) x))) (nsucc seqc-ivals 512 :step 512))))))
+                              (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (=v y i)) x))) (nsucc seqc-ivals 512 :step 512))))))
                         '(0 1 2 3 4 5 6))))
           (if (>= *mess* 4) (print (apply
                                     #'concatenate
@@ -164,15 +197,17 @@
                                                   i
                                                   (if (elt totals i) (value-of (elt totals i)))
                                                   (if (elt targets i) (value-of (elt targets i)))))
-                                      '(0 1 2 3 4 5 6))))))                                            
+                                      '(0 1 2 3 4 5 6))))))
+          (if (>= *mess* 7) (print (format nil "ivs (~A): ~A" (length ivs) ivs)))
           (apply #'andv
-                 (mapcar
-                  #'(lambda (i) (if (and (elt totals i) (elt targets i)) 
-                                    (if (< (elt targets i) 0)
-                                        (>=v (elt totals i) (* -1 (elt targets i)))
-                                      (<=v (elt totals i) (elt targets i)))
-                                  t))
-                  '(0 1 2 3 4 5 6)))))))))
+                 (print
+                  (mapcar
+                   #'(lambda (i) (if (and (elt totals i) (elt targets i)) 
+                                     (if (< (elt targets i) 0)
+                                         (>=v (elt totals i) (* -1 (elt targets i)))
+                                       (<=v (elt totals i) (elt targets i)))
+                                   t))
+                   '(0 1 2 3 4 5 6))))))))))
 
 (defun seqc-ms-ratios-funcallv (fn seqc)
   (apply #'andv (mapcar fn (mapcar #'flat (seqc-ms->ratios (remove nil seqc))))))
@@ -399,3 +434,34 @@
                               (notv (list=v l1 l2))))
                         (nPr (if car/=v (mapcar #'cdr seqc) seqc)
                              2)))))
+
+
+(define-box jjf-1st-species1 (cf &optional mode) 
+  :icon 324
+  (let* ((v (mapcar #'(lambda (x) (an-integer-betweenv 1 127)) cf))
+         (seqc (list v cf))
+         (ivals (mapcar #'(lambda (x) (-v (car x) (cadr x))) (mat-trans seqc)))
+         (hivls (remove nil (maplist #'(lambda (x) (if (cdr x) (-v (car x) (cadr x)) nil)) v)))
+         (mode0127 (if mode (set->midic0127 mode))))
+    (if mode0127
+        (progn 
+          (mapcar #'(lambda (x) (assert! (memberv x mode0127))) cf)          
+          (mapcar #'(lambda (x) (assert! (memberv x mode0127))) v)))
+    (assert! (memberv (car v) (list (car cf)
+                                    (+v (car cf) 7)
+                                    (+v (car cf) 12))))
+    (mapcar #'(lambda (x) (assert! (memberv (integer-absv x) '(1 2 3 4 5)))) hivls)
+    (mapcar #'(lambda (x) (assert! (>=v x 0))) (list (car ivals) (car (reverse ivals))))
+    (mapcar #'(lambda (x) (assert! (memberv x '(3 4 5 7 8 9 15)))) (subseq ivals 1 (1- (length ivals))))
+    (mapcar #'(lambda (x) (assert! (notv (=v (modv x 12) 0)))) (subseq ivals 1 (1- (length ivals))))
+    (mapcar #'(lambda (x) (assert! (<=v x 16))) ivals)
+    (maplist #'(lambda (x) (if (cdr x) (assert! (notv (=v (car x) (cadr x)))))) v)
+    (maplist #'(lambda (x) 
+                 (if (cdr x)
+                     (progn 
+                       (assert! (notv (andv (=v 7 (modv (car x) 12)) (=v 7 (modv (cadr x) 12)))))
+                       (assert! (notv (andv (=v 0 (modv (car x) 12)) (=v 0 (modv (cadr x) 12)))))))) ivals)
+    ;(mapcar #'(lambda (x) (assert! (memberv x '(3 4 5 7 8 9)))) ivals)
+    (assert! (=v (car (reverse ivals)) 12))
+    (assert! (memberv (-v (car (reverse v)) (cadr (reverse v))) '(2 1 -1 -2)))
+    seqc))    
