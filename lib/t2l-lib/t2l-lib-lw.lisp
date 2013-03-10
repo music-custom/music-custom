@@ -1,6 +1,7 @@
 (in-package :cl-user)
 (setf system:*stack-overflow-behaviour* :warn)
-(load "C:/Program Files (x86)/OM 6.5.1/buildimage/build-om/build-om.lisp")
+; (load "C:/Program Files (x86)/OM 6.5.1/buildimage/build-om/build-om.lisp")
+(load "C:/Users/User/Documents/Projects/OM-6.5.1-SRC/buildimage/build-om/build-om.lisp")
 (setq ws (get-working-directory))
 (setq ompw-pathname (make-pathname :directory (append (butlast (PATHNAME-DIRECTORY ws)) (list "ompw")) :host (pathname-host ws)))
 (pushnew (namestring ompw-pathname) asdf:*central-registry* :test #'eq)
