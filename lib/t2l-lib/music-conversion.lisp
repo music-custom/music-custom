@@ -3,45 +3,13 @@
 
 (define-box pcsets=v ((set1 (0 4 7)) (set2 (60 64 67)))
   :icon 324
-  (labels
-      ((list->m12 (list)
-         (mapcar #'(lambda (x) (modv x 12))
-                 list))
-       (sorted-permutations-of (list)
-         (all-values (let ((ps (a-permutation-of list)))
-                       (unless (possibly? 
-                                 (assert! (apply #'<=v ps))
-                                 t)
-                         (fail))
-                       ps)))
-       (rotatem12 (list i)
-         (let ((rs (rotate list i)))
-           (list->m12 (list-v rs (car rs)))))
-       (all-rotations-of (list) 
-         (mapcar #'(lambda (x) (rotatem12 list x))
-                 (arithm-ser 0 (1- (length list)) 1))))
-    (let ((set1m12 #'(lambda (x) (modv x 12)) set1)
-          (set2m12 #'(lambda (x) (modv x 12)) set2))
-      (let ((ps1 (mapcar #'all-rotations-of (sorted-permutations-of set1m12)))
-            (ps2 (mapcar #'all-rotations-of (sorted-permutations-of set2m12))))
-        (reduce-chunks
-         #'orv
-         (mapcar
-          #'(lambda (a)
-              (reduce-chunks
-               #'orv
-               (mapcar
-                #'(lambda (b)
-                    (reduce-chunks
-                     #'orv
-                     (mapcar 
-                      #'(lambda (c)
-                          (reduce-chunks
-                           #'orv
-                           (mapcar #'(lambda (d) (lists=v b d)) c)))
-                      ps2)))                
-               a)))
-          ps1))))))
+  (let ((set1m12 (mapcar #'(lambda (x) (modv x 12)) (list-v set1 (car set1))))
+        (set2m12 set2))
+    (reduce-chunks
+     #'orv
+     (mapcar #'(lambda (p1) (lists=v p1 set1m12))              
+             (mapcar #'(lambda (p2) (mapcar #'(lambda (x) (modv x 12)) (list-v p2 (car p2))))
+                     (all-values (a-permutation-of set2m12)))))))
 
 (define-box seqc-xl-pcsets=v ((seqc ((60 60 60)
                                      (64 64 64)
@@ -57,7 +25,7 @@
         (reduce-chunks
          #'orv
          (mapcar #'(lambda (y) (pcsets=v x y)) sets)))
-    (mat-trans (flatten-seqc seqc)))))
+    (remove-duplicates (mat-trans (flatten-seqc seqc)) :test #'set-difference-eq))))
 
 (define-box list-nsucc<>v (list step)
   :icon 324
