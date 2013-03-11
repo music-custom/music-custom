@@ -514,6 +514,32 @@
    (t
     `(,f ,@args))))
 
+;;; This function is also used by solution to return the values
+;;; found by the search. If objects were explored by the search
+;;; NEW instances of the same type are generated and returned.
+
+(defun apply-substitution (x &aux retobj)
+  (let ((val (value-of x)))
+    ;; Changed from a cond to a typecase, 8/7/00
+    (typecase val
+      (cons
+       (cons (apply-substitution (car val)) (apply-substitution (cdr val)))
+       )
+      (standard-object
+       (setq retobj (make-instance (class-name (class-of val))))
+       (copy-slots val retobj)
+       retobj 
+       )
+      (array
+       (setq retobj (make-array (array-dimensions val)))
+       (copy-cells val retobj)
+       retobj
+       )
+      (t val)
+      )
+    )
+  )
+
 ;;; This function returns a variable which is constrained to return a list
 ;;; containing the distinct elements of x. The argument x can be either a
 ;;; value or a constraint variable at the time of function invocation.
@@ -565,7 +591,7 @@
 
       (setq noticer
 	    #'(lambda()
-		(when (and (bound? x) (bound? y))
+		(when (and (ground? x) (ground? y))
 		  (assert!
 		   (equalv z
 			   (equalv

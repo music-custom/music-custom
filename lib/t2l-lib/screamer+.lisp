@@ -298,7 +298,7 @@
 ;;; found by the search. If objects were explored by the search
 ;;; NEW instances of the same type are generated and returned.
 
-(defun apply-substitution (x &amp;aux retobj)
+(defun apply-substitution (x &aux retobj)
   (let ((val (value-of x)))
     ;; Changed from a cond to a typecase, 8/7/00
     (typecase val
@@ -2613,7 +2613,7 @@
     (flet (;; This is just a function which can be used by 'sort' to
 	   ;; derive some well-defined ordering for any known values x and y
 	   (strcmp(x y)
-		  (numberp (string< (format nil "~s" x)
+		  (numberp (string> (format nil "~s" x)
 				    (format nil "~s" y)))
 		  )
 	   )
