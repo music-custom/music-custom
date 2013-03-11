@@ -141,7 +141,7 @@
      list-nsucc<>v
      listdx-similarity-var
      modal-xposn-containing
-     pcsets=v
+     pcset=v
      print-seqcx-ival-lists
      seqc-list-gap-memberv
      seqc-list-gap-vars

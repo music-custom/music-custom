@@ -1,15 +1,19 @@
 (in-package :t2l)
 
 
-(define-box pcsets=v ((set1 (0 4 7)) (set2 (60 64 67)))
+
+(defun %12v (x) (modv x 12))
+(defun mod12v (x) (modv x 12))
+
+(define-box pcset=v ((set1 (0 4 7)) (set2 (60 64 67)))
   :icon 324
-  (let ((set1m12 (mapcar #'(lambda (x) (modv x 12)) (list-v set1 (car set1))))
-        (set2m12 set2))
+  (let ((pcs1 (mapcar #'%12v (list-v set1 (car set1)))))
     (reduce-chunks
      #'orv
-     (mapcar #'(lambda (p1) (lists=v p1 set1m12))              
-             (mapcar #'(lambda (p2) (mapcar #'(lambda (x) (modv x 12)) (list-v p2 (car p2))))
-                     (all-values (a-permutation-of set2m12)))))))
+     (mapcar #'(lambda (pcs2) (set-equalv pcs1 pcs2))
+             (mapcar #'(lambda (x) (mapcar #'%12v (list-v x (car x))))
+                     (mapcar #'(lambda (i) (rotate set2 i))
+                             (arithm-ser 0 (1- (length set2)) 1)))))))
 
 (define-box seqc-xl-pcsets=v ((seqc ((60 60 60)
                                      (64 64 64)
@@ -24,7 +28,7 @@
     #'(lambda (x)
         (reduce-chunks
          #'orv
-         (mapcar #'(lambda (y) (pcsets=v x y)) sets)))
+         (mapcar #'(lambda (y) (pcset=v x y)) sets)))
     (remove-duplicates (mat-trans (flatten-seqc seqc)) :test #'set-difference-eq))))
 
 (define-box list-nsucc<>v (list step)

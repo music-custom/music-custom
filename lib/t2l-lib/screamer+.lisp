@@ -2613,7 +2613,7 @@
     (flet (;; This is just a function which can be used by 'sort' to
 	   ;; derive some well-defined ordering for any known values x and y
 	   (strcmp(x y)
-		  (numberp (string&gt; (format nil "~s" x)
+		  (numberp (string< (format nil "~s" x)
 				    (format nil "~s" y)))
 		  )
 	   )

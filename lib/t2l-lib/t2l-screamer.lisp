@@ -514,6 +514,83 @@
    (t
     `(,f ,@args))))
 
+;;; This function returns a variable which is constrained to return a list
+;;; containing the distinct elements of x. The argument x can be either a
+;;; value or a constraint variable at the time of function invocation.
+
+(defun members-ofv (x)
+  (let (
+        (z (make-variable))
+        )
+
+     (screamer::attach-noticer!
+       #'(lambda()
+           (when (and (bound? x) (every #'bound? (value-of x)))
+              (do* (
+                    (dec (apply-substitution x) (cdr dec))
+                    (curr (car dec) (car dec))
+                    (vals nil)
+                    )
+                  ((endp dec) 
+                   (assert! (equalv z vals))
+                   )
+                 (pushnew (value-of curr) vals :test #'equal)
+                 )
+              )
+           )
+       x)
+     z)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Function: set-equalv
+;;;
+;;; This function returns a boolean variable constrained to indicate whether
+;;; the lists x and y have the same members
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun set-equalv (x y)
+  (let (
+	(z (a-booleanv))
+	noticer
+	)
+    
+    (flet (;; This is just a function which can be used by 'sort' to
+	   ;; derive some well-defined ordering for any known values x and y
+	   (strcmp(x y)
+		  (numberp (string< (format nil "~s" x)
+				    (format nil "~s" y)))
+		  )
+	   )
+
+      (setq noticer
+	    #'(lambda()
+		(when (and (bound? x) (bound? y))
+		  (assert!
+		   (equalv z
+			   (equalv
+			    (sort
+			     (value-of (members-ofv (apply-substitution x)))
+			     #'strcmp)
+			    (sort
+			     (value-of (members-ofv (apply-substitution y)))
+			     #'strcmp)
+			    )
+			   )
+		   )
+		  )
+		)
+	    )
+      (screamer::attach-noticer! noticer x)
+      (screamer::attach-noticer! noticer y)
+      )
+    z)
+  )
+
+
+
+
+
 (defmacro n-values (n
 		    &body forms)
 "Copyright (c) 2007, Kilian Sprotte. All rights reserved.
