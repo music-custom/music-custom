@@ -1631,7 +1631,7 @@
                                (t 
                                 (contains1 a vars)))))
              (sublists-contain-lists? (lists)
-               (dolist (x (remove-nil lists))
+               (dolist (x (remove nil lists))
                  (if (null x) (return nil))
                  (if (contains-list x) (return t))))
              (process-seqc-elem (x)
@@ -1669,7 +1669,7 @@
                          'p))
                     (ms-vars (funcall-rec #'process-seqc-elem ms))
                     (r (cond (debug (process-groups s))
-                             (t (remove-nil (mapcar (lambda (x) (list (list (read-from-string "?msn") (read-from-string "?msd")) x)) ms-vars)))))
+                             (t (remove nil (mapcar (lambda (x) (list (list (read-from-string "?msn") (read-from-string "?msd")) x)) ms-vars)))))
                     (r1 (cond (match-init-group-to-signature 
                                (mapcar (lambda (x)
                                          (cond ((and (= (length (cadr x)) 1)

@@ -1609,7 +1609,7 @@
 (defun export1-no-duplicates (seqc)
   (apply #'andv 
          (mapcar #'(lambda (x)
-                     (remove-nil (maplist #'(lambda (y)
+                     (remove nil (maplist #'(lambda (y)
                                               (cond ((cdr y) (notv (=v (car y) (cadr y))))
                                                     (t nil)))
                                           (flat x))))

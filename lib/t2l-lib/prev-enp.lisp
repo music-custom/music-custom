@@ -3,10 +3,10 @@
                             (cdr-assoc :prev-enp (params obj))
                             (subtypep (type-of (cdr-assoc :prev-enp (params obj))) 'midic-enppar)
                             (midics (cdr-assoc :prev-enp (params obj)))
-                            (last-atom (remove-nil (flat (midics (cdr-assoc :prev-enp (params obj)))))))
+                            (last-atom (remove nil (flat (midics (cdr-assoc :prev-enp (params obj)))))))
                        (let* ((init (an-integer-betweenv 0 127))
                               (prev-midics 
-                               (remove-nil 
+                               (remove nil 
                                 (flat 
                                  (midics (cdr-assoc :prev-enp (params obj))))))
                               (prev (last-atom prev-midics))

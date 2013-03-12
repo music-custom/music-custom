@@ -73,7 +73,7 @@
      random-list-e
      remove1
      remove-all
-     remove-nil
+     remove nil
      retain-all
      sort-ratio-list
      test-merge-ms-partns

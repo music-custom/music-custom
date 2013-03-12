@@ -1,6 +1,6 @@
 (in-package :t2l)
 
-(define-box om-all-memberv (x sequence &optional (remove-nil t))
+(define-box om-all-memberv (x sequence &optional (remove nil t))
   :initvals '(nil nil t)
   :indoc '("" "" "")
   :icon 324
@@ -8,8 +8,8 @@
   (cond ((null x) (memberv nil sequence))
         ((listp x) 
          (apply #'andv (mapcar #'(lambda (y) (memberv y sequence))
-                               (if remove-nil
-                                   (remove-nil (flat x))
+                               (if remove nil
+                                   (remove nil (flat x))
                                  (flat x)))))
         (t (memberv x sequence))))
 	
@@ -20,7 +20,7 @@
   :doc ""
   (apply #'andv
          (mapcar #'(lambda (x)
-                     (let ((group (remove-nil (flat x))))
+                     (let ((group (remove nil (flat x))))
                        (cond (group
                               (let ((group-min (apply #'minv group))
                                     (group-max (apply #'maxv group)))
@@ -32,7 +32,7 @@
                      (nsucc (flat list) n :step step))))
 
 (cl:defun list-nsucc-funcallv (fn list n)
-  (apply #'andv (mapcar fn (nsucc (remove-nil (flat list)) n :step n))))
+  (apply #'andv (mapcar fn (nsucc (remove nil (flat list)) n :step n))))
 
 (define-box list-nsucc>v ((list list) (n integer))
   :initvals '((1 2 3 4 5 6 7) 3)

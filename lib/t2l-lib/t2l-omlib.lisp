@@ -16,7 +16,7 @@
   :indoc '("seqc" "trees")
   :icon 225
   :doc ""
-  (let ((init-seqc (mapcar #'remove-nil (reverse (mapcar #'flat seqc))))
+  (let ((init-seqc (mapcar #'(lambda (x) (remove nil x)) (reverse (mapcar #'flat seqc))))
         (init-rhythm-trees (reverse rhythm-trees)))
     (if (>= *mess* 20)
         (progn
