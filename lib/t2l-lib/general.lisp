@@ -416,7 +416,7 @@
 
 (cl:defun collect-next-nodes (input) ; -> list-template->vars labels
   (cond ((null input) nil)
-        ((listp input) (remove-nil (remove-duplicates (flat (mapcar #'(lambda (x) (search-nodes #'data x)) input)))))
+        ((listp input) (remove nil (remove-duplicates (flat (mapcar #'(lambda (x) (search-nodes #'data x)) input)))))
         (t (collect-next-nodes (next-nodes input)))))
 
 (cl:defun search-nodes (predicate root) ; -> list-template->vars labels
@@ -520,8 +520,8 @@
                                        (t (an-integerv))))
                              seqc))         
          (sflat (flat seqcv))
-         (sflatnn (remove-nil sflat)))
-    (if init (assert! (=v (car (remove-nil sflat)) init)))
+         (sflatnn (remove nil sflat)))
+    (if init (assert! (=v (car (remove nil sflat)) init)))
     (if min (mapcar #'(lambda (x) (assert! (>=v x min))) sflatnn))
     (if max (mapcar #'(lambda (x) (assert! (<=v x max))) sflatnn))
     (if superset (mapcar #'(lambda (x) (assert! (memberv x superset))) sflatnn))
@@ -536,7 +536,7 @@
                                      (screamer::variable? (cadr x)))
                                 (assert! (=v (cadr x) (+v (car x) (car y)))))
                                (t nil)))
-                     (remove-nil list)
+                     (remove nil list)
                      vars)      
             seqcv)
         vars))))
@@ -797,24 +797,6 @@ is replaced with replacement."
             while (< j (length list))
             collect (subseq list j (if (<= k length) k length)))))))
 
-(cl:defun remove-nil (list &optional (recursive t))
-  (labels
-      ((remove-nil-internal (x)
-         (cond ((null x) x)
-               ((listp x) (mapcar #'remove-nil-internal (remove nil x)))
-               (t x)))
-       (contains-nil? (x)
-         (loop for n in (flat x)
-               when (null n) 
-               return t))
-       (remove-nil-rec (list)
-         (let ((list (remove-nil-internal list)))
-           (cond ((null list) nil)
-                 ((contains-nil? list) (remove-nil list))
-                 (t list)))))
-    (if recursive
-        (remove-nil-rec list)
-      (remove-nil-internal list))))
 
 (cl:defun copy-all (tree)
  (if (atom tree) tree (cons (copy-all (car tree)) (copy-all (cdr tree)))))
@@ -862,7 +844,7 @@ is replaced with replacement."
     vars))
 
 (cl:defun listdxv (list)
-  (remove-nil (maplist #'(lambda (x) (if (cdr x) (-v (cadr x) (car x)))) list)))
+  (remove nil (maplist #'(lambda (x) (if (cdr x) (-v (cadr x) (car x)))) list)))
 
 (cl:defun listdx (ll list &optional bin-mode)
   (let ((ml (maplist #'(lambda (x) 

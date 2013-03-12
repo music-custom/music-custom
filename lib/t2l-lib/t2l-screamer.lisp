@@ -385,6 +385,13 @@
   (assert (not (and symbol-mode listdxx)))
   (if (and (null process-chunk-size) input-process-increment)
       (setf process-chunk-size input-process-increment))
+  (setf process-chunk-size
+        (cond ((and (null process-chunk-size) input-process-increment) input-process-increment)
+              (t process-chunk-size)))
+  (setf process-chunk-size
+        (cond ((null process-chunk-size) nil)
+              ((numberp process-chunk-size) process-chunk-size)
+              (t *mapprules-default-input-process-increment*)))
   (labels
       ((init-label (string)
          (cond ((not (stringp string)) (init-label (write-to-string string)))
@@ -411,12 +418,7 @@
                   v))))
        (process-increment-adjusted-length (length) 
          (if process-chunk-size
-             (* (ceiling (/ length (if (numberp process-chunk-size)
-                                       process-chunk-size
-                                     *mapprules-default-input-process-increment*)))
-                (if (numberp process-chunk-size)
-                    process-chunk-size
-                  *mapprules-default-input-process-increment*))
+             (* (ceiling (/ length process-chunk-size)) process-chunk-size)
            length))
        (make-input-sequence (length)
          (make-sequence 'list (process-increment-adjusted-length length) :initial-element '_)))
@@ -436,9 +438,7 @@
                                  (append list-vars-flat-subseq 
                                          (mapcar #'atom->var (make-sequence 'list (- (process-increment-adjusted-length (length list-vars-flat-subseq)) (length list-vars-flat-subseq)) :initial-element '_)))
                                list-vars-flat-subseq))
-             (map-fn-input (if listdxx
-                               (listdxv (append list-vars-flat (list (atom->var '_))))
-                             list-vars-flat)))
+             (map-fn-input (if listdxx (listdxv list-vars-flat) list-vars-flat)))
         (if (not symbol-mode)
             (progn 
               (if min (push (reduce-chunks #'andv (mapcar #'(lambda (x) (>=v x min)) list-vars-flat) :default t) c))
@@ -446,32 +446,27 @@
         (if superset (push (reduce-chunks #'andv (mapcar #'(lambda (x) (memberv x superset)) list-vars-flat) :default t) c))
         (cond
          (process-chunk-size
-          (let ((n (if (numberp process-chunk-size) 
-                       process-chunk-size
-                     *mapprules-default-input-process-increment*)))
-            (let ((map-fn-input-chunks (let ((nsucc (nsucc map-fn-input n :step (1- n))))
-                                         (cond ((and (> (length nsucc) 1)
-                                                     (= (length (car (reverse nsucc))) 1))
-                                                (butlast nsucc))
-                                               (t
-                                                nsucc)))))
-              (if (>= *mess* 5) (print (format nil "map-fn-input-chunks: ~A" map-fn-input-chunks)))              
-              (let ((var-input-dmg-list 
-                     (maplist
-                      #'(lambda (chunks)
-                          (if (>= *mess* 5) (print (format nil "mapprules: chunk ~A / ~A" (1+ (- (length map-fn-input-chunks) (length chunks))) (length map-fn-input-chunks))))
-                          (multiple-value-list
-                           (mapprules-internal (car chunks)
-                                               prules
-                                               :continuation-mode t
-                                               :symbol-mode symbol-mode
-                                               :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
-                                               :params params
-                                               :print-graph-info print-graph-info)))
-                      map-fn-input-chunks)))
-                (values (apply #'andv (mapcar #'car var-input-dmg-list))
-                        (cadar var-input-dmg-list)
-                        (caddar var-input-dmg-list))))))
+          (let ((map-fn-input-chunks (let ((nsucc (nsucc map-fn-input process-chunk-size :step (1- process-chunk-size))))
+                                       (cond ((and (> (length nsucc) 1)
+                                                   (= (length (car (reverse nsucc))) 1)) (butlast nsucc))
+                                             (t nsucc)))))
+            (if (>= *mess* 5) (print (format nil "map-fn-input-chunks: ~A" map-fn-input-chunks)))              
+            (let ((var-input-dmg-list 
+                   (maplist
+                    #'(lambda (chunks)
+                        (if (>= *mess* 5) (print (format nil "mapprules: chunk ~A / ~A" (1+ (- (length map-fn-input-chunks) (length chunks))) (length map-fn-input-chunks))))
+                        (multiple-value-list
+                         (mapprules-internal (car chunks)
+                                             prules
+                                             :continuation-mode t
+                                             :symbol-mode symbol-mode
+                                             :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
+                                             :params params
+                                             :print-graph-info print-graph-info)))
+                    map-fn-input-chunks)))
+              (values (apply #'andv (mapcar #'car var-input-dmg-list))
+                      (cadar var-input-dmg-list)
+                      (caddar var-input-dmg-list)))))
          (t 
           (multiple-value-bind 
               (var list dmg)
@@ -518,7 +513,7 @@
 ;;; found by the search. If objects were explored by the search
 ;;; NEW instances of the same type are generated and returned.
 
-(defun apply-substitution (x &aux retobj)
+#|(defun apply-substitution (x &aux retobj)
   (let ((val (value-of x)))
     ;; Changed from a cond to a typecase, 8/7/00
     (typecase val
@@ -538,7 +533,7 @@
       (t val)
       )
     )
-  )
+  )|#
 
 ;;; This function returns a variable which is constrained to return a list
 ;;; containing the distinct elements of x. The argument x can be either a
@@ -670,9 +665,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 
 (define-box om-assert! (&rest sequence)
   :icon 161
-  (if (cdr sequence) (dolist (x (butlast sequence)) (assert! x)))
-  ;(if (cdr sequence)
-  ;    (assert! (apply #'andv (butlast sequence))))
+  (global
+    (if (cdr sequence) 
+      (progn
+        (if (>= *mess* 5) (print (format nil "om-assert! ~A" (butlast sequence))))
+        (assert! (apply #'andv (butlast sequence)))))
+  (if (>= *mess* 5) (print (format nil "om-assert! OK")))
+  (car (reverse sequence))))
+
+(cl:defun om-assert!2 (&rest sequence)
+  (if (cdr sequence) 
+      (progn
+        (if (>= *mess* 5) (print (format nil "om-assert! ~A" (butlast sequence))))
+        (assert! (apply #'andv (butlast sequence)))))
+  (if (>= *mess* 5) (print (format nil "om-assert! OK")))
   (car (reverse sequence)))
 
 (defun xorv (&rest xs)

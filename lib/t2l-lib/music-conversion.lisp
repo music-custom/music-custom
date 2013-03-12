@@ -22,14 +22,16 @@
                                      (0 4 7)
                                      (0 2 5))))
   :icon 324
-  (reduce-chunks
-   #'andv
-   (mapcar
-    #'(lambda (x)
-        (reduce-chunks
-         #'orv
-         (mapcar #'(lambda (y) (pcset=v x y)) sets)))
-    (remove-duplicates (mat-trans (flatten-seqc seqc)) :test #'set-difference-eq))))
+  (let ((seqcx (remove-duplicates (mat-trans (flatten-seqc seqc)) :test #'set-difference-eq)))
+    (reduce-chunks
+     #'andv
+     (maplist
+      #'(lambda (x)
+          (if (>= *mess* 5) (print (format nil "seqc-xl-pcsets=v ~A / ~A" (1+ (- (length seqcx) (length x))) (length seqcx))))
+          (reduce-chunks
+           #'orv
+           (mapcar #'(lambda (y) (pcset=v (car x) y)) sets)))
+      seqcx))))
 
 (define-box list-nsucc<>v (list step)
   :icon 324
