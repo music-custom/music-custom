@@ -2502,15 +2502,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
   "print messages when t2l::*mess* >= 30"
   (if (>= *mess* 30) (print (format nil "divide-and-conquer-force IN: ~A" x)))
   (let ((y (linear-force x)))
-    (if (>= *mess* 30) (print (format nil "divide-and-conquer-force OUT: ~A" y)))
+    (if (>= *mess* 30) (print (format nil "divide-and-conquer-force OUT: ~A~%" y)))
     y))
 
 (defun print-linear-force (x)
   "print messages when t2l::*mess* >= 30"
   (if (>= *mess* 30) (print (format nil "linear-force IN: ~A" x)))
-  (let ((y (linear-force x)))
-    (if (>= *mess* 30) (print (format nil "linear-force OUT: ~A" y)))
-    y))
+  (linear-force x)
+  (if (>= *mess* 30) (print (format nil "linear-force OUT: ~A ~%" x)))
+  x)
 
 (defun print-screamer-info (arg)
   (lprint 'screamer-version *screamer-version*)
