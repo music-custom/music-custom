@@ -16,5 +16,13 @@
     (:A -2)
     (:A -1)))
 (setq vars (mapcar #'(lambda (x) (an-integer-betweenv 0 127)) (make-sequence 'list 12)))
-(om-assert! (all-betweenv vars 60 80) (mapprules vars prules :listdxx t :process-chunk-size 8) vars)
-(one-value (solution vars (static-ordering #'linear-force)))
+
+(om-assert! (all-betweenv vars 60 80)
+                       (mapprules vars prules :listdxx t :process-chunk-size 8)
+                       vars)
+(apply #'progn '((print 1)))
+
+(om-assert!3 'a 'b)
+(one-value 
+ (solution (om-assert!
+           (static-ordering #'linear-force)))

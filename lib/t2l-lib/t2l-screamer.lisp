@@ -663,23 +663,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
    (ith-value (a-random-member-of (arithm-ser 0 n 1))
               expression)))
 
-(define-box om-assert! (&rest sequence)
-  :icon 161
-  (global
-    (if (cdr sequence) 
-      (progn
-        (if (>= *mess* 5) (print (format nil "om-assert! ~A" (butlast sequence))))
-        (assert! (apply #'andv (butlast sequence)))))
-  (if (>= *mess* 5) (print (format nil "om-assert! OK")))
-  (car (reverse sequence))))
-
-(cl:defun om-assert!2 (&rest sequence)
-  (if (cdr sequence) 
-      (progn
-        (if (>= *mess* 5) (print (format nil "om-assert! ~A" (butlast sequence))))
-        (assert! (apply #'andv (butlast sequence)))))
-  (if (>= *mess* 5) (print (format nil "om-assert! OK")))
-  (car (reverse sequence)))
+(defmacro om-assert! (&rest sequence)
+  (append (list 'progn) (mapcar #'(lambda (x) (list 'assert! x)) (butlast sequence)) (car (reverse sequence))))
+  
 
 (defun xorv (&rest xs)
   (andv (notv (apply #'andv xs))
