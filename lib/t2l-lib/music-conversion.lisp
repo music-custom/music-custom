@@ -1,9 +1,22 @@
 (in-package :t2l)
 
 
-
+(defun %12 (x) (mod x 12))
+(defun mod12 (x) (mod x 12))
 (defun %12v (x) (modv x 12))
 (defun mod12v (x) (modv x 12))
+
+(define-box pcset= ((set1 (0 4 7)) (set2 (60 64 67)))
+  :icon 324
+  (labels
+      ((list- (list value) (mapcar #'(lambda (x) (- x value)) list)))
+    (let ((pcs1 (mapcar #'%12 (list- set1 (car set1)))))
+      (some
+       #'(lambda (x) (not (null x)))
+       (mapcar #'(lambda (pcs2) (null (set-difference pcs1 pcs2)))
+               (mapcar #'(lambda (x) (mapcar #'%12 (list- x (car x))))
+                       (mapcar #'(lambda (i) (rotate set2 i))
+                               (arithm-ser 0 (1- (length set2)) 1))))))))
 
 (define-box pcset=v ((set1 (0 4 7)) (set2 (60 64 67)))
   :icon 324
