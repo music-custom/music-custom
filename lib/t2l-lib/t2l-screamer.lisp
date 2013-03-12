@@ -663,6 +663,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
    (ith-value (a-random-member-of (arithm-ser 0 n 1))
               expression)))
 
+(define-box om-assert!2 (&rest sequence)
+  :icon 324
+  t)
+            
 (defmacro om-assert! (&rest sequence)
   (append (list 'progn) (mapcar #'(lambda (x) (list 'assert! x)) (butlast sequence)) (car (reverse sequence))))
   
