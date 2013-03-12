@@ -668,7 +668,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
   t)
             
 (defmacro om-assert! (&rest sequence)
-  (append (list 'progn) (mapcar #'(lambda (x) (list 'assert! x)) (butlast sequence)) (car (reverse sequence))))
+  `(progn ,@(mapcar #'(lambda (x) `(assert! ,x)) (butlast sequence)) ,(car (reverse sequence))))
   
 
 (defun xorv (&rest xs)

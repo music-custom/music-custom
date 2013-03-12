@@ -15,14 +15,20 @@
     (:A -3)
     (:A -2)
     (:A -1)))
-(setq vars (mapcar #'(lambda (x) (an-integer-betweenv 0 127)) (make-sequence 'list 12)))
+(setq vars (mapcar #'(lambda (x) (an-integer-betweenv 0 127)) (make-sequence 'list 4)))
+(setq v1 (=v 1 1))
+(setq v2 (=v 2 2))
+(setq r (list 'ok))
 
-(om-assert! (all-betweenv vars 60 80)
-                       (mapprules vars prules :listdxx t :process-chunk-size 8)
-                       vars)
+(macroexpand (om-assert! t t t))
+(om-assert! v1 v2 r)
+(om-assert! 
+                       (list vars))
 (apply #'progn '((print 1)))
 
 (om-assert!3 'a 'b)
 (one-value 
- (solution (om-assert!
+ (solution (om-assert! (all-betweenv vars 60 80)
+                       (mapprules vars prules :listdxx t :process-chunk-size nil)
+                       vars)
            (static-ordering #'linear-force)))
