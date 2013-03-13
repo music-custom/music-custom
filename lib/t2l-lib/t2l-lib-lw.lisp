@@ -12,13 +12,15 @@
 (setq filepath (namestring (get-working-directory)))
 (dolist (x '(
                "general"
+               "t2l-screamer+"
                "t2l-screamer"
                "t2l-screamer-boxes"
                "t2l-screamer-misc"
                "t2l-omlib"
+               "mapprules"
                "midic"
                "music-conversion"
-               "enppar"
+               ;"enppar"
                "export"
                ))
   (load (concatenate 'string filepath x ".lisp")))

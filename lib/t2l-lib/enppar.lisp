@@ -460,8 +460,6 @@ midic-[start|min|max]"))
          (enppar->csptech-timepoint-seqc-vars obj))
         ((subtypep (type-of obj) 'export1-timepoint-seqc)
          (enppar->export1-timepoint-seqc-vars obj))
-        ((subtypep (type-of obj) 'csptech-timepoint-seqc)
-         (enppar->csptech-timepoint-seqc-vars obj))
         (t nil)))
 
 (defun enppar->csptech-timepoint-seqc-vars (obj)

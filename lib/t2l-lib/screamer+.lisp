@@ -298,7 +298,7 @@
 ;;; found by the search. If objects were explored by the search
 ;;; NEW instances of the same type are generated and returned.
 
-(defun apply-substitution (x &aux retobj)
+(defun apply-substitution (x &amp;aux retobj)
   (let ((val (value-of x)))
     ;; Changed from a cond to a typecase, 8/7/00
     (typecase val
@@ -348,25 +348,25 @@
 ;;; This version of funcallv uses ground? to test the boundness of its arguments
 ;;; instead of bound?
 
-(defun funcallgv (f &amp;rest x)
- (let ((f (value-of f)))
-  (if (variable? f)
-      (error "The current implementation does not allow the first argument~%~
+(defun funcallgv (f &rest x)
+  (let ((f (value-of f)))
+    (if (variable? f)
+        (error "The current implementation does not allow the first argument~%~
               of FUNCALLV to be an unbound variable"))
-  (unless (functionp f)
-   (error "The first argument to FUNCALLV must be a deterministic function"))
-  (if (every #'ground? x)
-      (apply f (mapcar #'value-of x))
+    (unless (functionp f)
+      (error "The first argument to FUNCALLV must be a deterministic function"))
+    (if (every #'ground? x)
+        (apply f (mapcar #'value-of x))
       (let ((z (make-variable)))
-       (assert!-constraint
-	#'(lambda (&amp;rest x) (equal (first x) (apply f (rest x)))) t (cons z x))
-       (dolist (argument x)
-	(attach-noticer!
-	 #'(lambda ()
-	    (if (every #'ground? x)
-		(assert!-equalv z (apply f (mapcar #'value-of x)))))
-	 argument))
-       z))))
+        (assert!-constraint
+         #'(lambda (&rest x) (equal (first x) (apply f (rest x)))) t (cons z x))
+        (dolist (argument x)
+          (attach-noticer!
+           #'(lambda ()
+               (if (every #'ground? x)
+                   (assert!-equalv z (apply f (mapcar #'value-of x)))))
+           argument))
+        z))))
 
 
 (defun slot-names-of (obj)
@@ -2613,7 +2613,7 @@
     (flet (;; This is just a function which can be used by 'sort' to
 	   ;; derive some well-defined ordering for any known values x and y
 	   (strcmp(x y)
-		  (numberp (string> (format nil "~s" x)
+		  (numberp (string&gt; (format nil "~s" x)
 				    (format nil "~s" y)))
 		  )
 	   )
@@ -3385,3 +3385,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (setq excl:*enable-package-locked-errors* t)
+
+
