@@ -89,18 +89,39 @@
       fail-form)))
 
 (define-box om-all-solutions (x &optional force-function)
-  :initvals '(nil)
-  :indoc '("" )
   :icon 150
-  :doc ""
   (all-solutions x force-function))
 
 (define-box om-one-solution (x &optional force-function fail-form)
-  :initvals '(nil nil)
-  :indoc '("" "")
   :icon 150
-  :doc ""
   (one-solution x force-function fail-form))
+
+(define-box om-reorder-one-solution (x cost-function terminate? force-function &optional fail-form)
+  :icon 150
+  (one-value (solution x 
+                       (reorder (cond ((null cost-function) #'domain-size)
+                                      ((functionp cost-function) cost-function)
+                                      ((or (string= (format nil "~A" cost-function) "domain-size")
+                                           (string= (format nil "~A" cost-function) "ds")) #'domain-size)   
+                                      ((or (string= (format nil "~A" cost-function) "range-size")
+                                           (string= (format nil "~A" cost-function) "rs")) #'range-size)
+                                      (t #'domain-size))
+                                (cond ((null terminate?) #'(lambda (x) (declare (ignore x)) nil))
+                                      ((functionp terminate?) terminate?)
+                                      (t #'(lambda (x) (declare (ignore x)) nil)))
+                                #'<
+                                (cond ((null force-function) #'linear-force)
+                                      ((functionp force-function) force-function)
+                                      ((or (string= (format nil "~A" force-function) "linear-force")
+                                           (string= (format nil "~A" force-function) "lf")) #'linear-force)   
+                                      ((or (string= (format nil "~A" force-function) "print-linear-force")
+                                           (string= (format nil "~A" force-function) "plf")) #'print-linear-force)
+                                      ((or (string= (format nil "~A" force-function) "print-divide-and-conquer-force")
+                                           (string= (format nil "~A" force-function) "pdacf")) #'print-divide-and-conquer-force)
+                                      ((or (string= (format nil "~A" force-function) "divide-and-conquer-force")
+                                           (string= (format nil "~A" force-function) "dacf")) #'divide-and-conquer-force)
+                                      (t #'linear-force))))
+             (if fail-form fail-form (fail))))
 
 (define-box om-ith-solution (i x &optional force-function fail-form)
   :initvals '(0 nil)

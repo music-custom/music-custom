@@ -111,6 +111,6 @@
   (solution (sudoku puz)
             (reorder #'domain-size
                      #'(lambda (x) (declare (ignore x)) nil)
-                     #'>
-                     #'linear-force))
+                     #'<
+                     #'divide-and-conquer-force))
   'fail))
