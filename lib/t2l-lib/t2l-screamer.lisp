@@ -84,6 +84,15 @@
                               #'(lambda (x) (declare (ignore x)) nil)
                               #'<
                               #'divide-and-conquer-force))
+                    ((or (string= (write-to-string force-function) "print-reorder-domain-size-linear-force")
+                         (string= (write-to-string force-function) "prodslf")
+                         (string= (write-to-string force-function) "print-reorder-lf"))
+                     (if (>= *mess* 10) 
+                         (lprint 'om-solution "reordering force-function: linear-force fn"))
+                     (reorder #'domain-size
+                              #'(lambda (x) (declare (ignore x)) nil)
+                              #'<
+                              #'print-linear-force))
                     ((or (string= (write-to-string force-function) "print-reorder-domain-size-divide-and-conquer-force")
                          (string= (write-to-string force-function) "prodsdacf")
                          (string= (write-to-string force-function) "print-reorder-dacf"))
@@ -1820,9 +1829,9 @@
 (defun print-divide-and-conquer-force (x)
   "print messages when t2l::*mess* >= 30"
   (if (>= *mess* 30) (print (format nil "divide-and-conquer-force IN: ~A" x)))
-  (let ((y (linear-force x)))
-    (if (>= *mess* 30) (print (format nil "divide-and-conquer-force OUT: ~A~%" y)))
-    y))
+  (divide-and-conquer-force x)
+  (if (>= *mess* 30) (print (format nil "divide-and-conquer-force OUT: ~A~%" x)))
+  x)
 
 (defun print-linear-force (x)
   "print messages when t2l::*mess* >= 30"
