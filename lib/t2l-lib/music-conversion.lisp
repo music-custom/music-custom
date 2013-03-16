@@ -18,22 +18,28 @@
                        (mapcar #'(lambda (i) (rotate set2 i))
                                (arithm-ser 0 (1- (length set2)) 1))))))))
 
-(define-box pcset=v ((set1 (0 4 7)) (set2 (60 64 67)))
+(define-box pcset=v ((set1 (0 4 7)) (set2 (60 64 67)) &optional process-pcset-inverse)
   :icon 324
-  (let ((pcs1 (mapcar #'%12v (list-v set1 (car set1)))))
-    (reduce-chunks
-     #'orv
-     (mapcar #'(lambda (pcs2) (set-equalv pcs1 pcs2))
-             (mapcar #'(lambda (x) (mapcar #'%12v (list-v x (car x))))
-                     (mapcar #'(lambda (i) (rotate set2 i))
-                             (arithm-ser 0 (1- (length set2)) 1)))))))
-
+  (cond
+   (process-pcset-inverse
+    (orv (pcset=v set1 set2 nil)
+         (pcset=v (listdxxv (reverse (listdxv set1))) set2 nil)))
+   (t
+    (let ((pcs1 (mapcar #'%12v (list-v set1 (car set1)))))
+      (reduce-chunks
+       #'orv
+       (mapcar #'(lambda (pcs2) (set-equalv pcs1 pcs2))
+               (mapcar #'(lambda (x) (mapcar #'%12v (list-v x (car x))))
+                       (mapcar #'(lambda (i) (rotate set2 i))
+                               (arithm-ser 0 (1- (length set2)) 1)))))))))
+   
 (define-box seqc-xl-pcsets=v ((seqc ((60 60 60)
                                      (64 64 64)
                                      (67 67 67)))
                               (sets ((0 3 5) 
                                      (0 4 7)
-                                     (0 2 5))))
+                                     (0 2 5)))
+                              &key process-pcset-inverse)
   :icon 324
   (let ((seqcx (remove-duplicates (mat-trans (flatten-seqc seqc)) :test #'set-difference-eq)))
     (reduce-chunks
@@ -43,7 +49,7 @@
           (if (>= *mess* 5) (print (format nil "seqc-xl-pcsets=v ~A / ~A" (1+ (- (length seqcx) (length x))) (length seqcx))))
           (reduce-chunks
            #'orv
-           (mapcar #'(lambda (y) (pcset=v (car x) y)) sets)))
+           (mapcar #'(lambda (y) (pcset=v (car x) y process-pcset-inverse)) sets)))
       seqcx))))
 
 (define-box list-nsucc<>v (list step)
