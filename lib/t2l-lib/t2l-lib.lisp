@@ -129,6 +129,7 @@
      join-seqc-ms
      ms-vars->elems
      ms-vars->ratios
+     pcset-filter
      seqc->ms-vars
      seqc->poly
      seqc->voices

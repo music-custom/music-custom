@@ -60,22 +60,6 @@
   9767 9769 9781 9787 9791 9803 9811 9817 9829 9833 9839 9851 9857 9859 9871 9883 9887 9901 9907 9923 9929 9931
   9941 9949 9967 9973))
 
-(cl:defun permut-random (input)
-  (labels
-      ((takeout (i list)
-        (cond ((= i 0) (subseq list 1 (length list)))
-              ((= i (1- (length list))) (butlast list))
-              (t (append
-                  (subseq list 0 i)
-                  (subseq list (1+ i) (length list)))))))
-    (let ((list (copy-seq input))
-          (r nil))
-      (loop for i from 0 while (< i (length input)) do
-            (unless (= 0 (length list))
-              (let ((j (random (length list))))
-                (push (elt list j) r)
-                (setf list (takeout j list)))))
-      r)))
 
 (cl:defun funcall-rec (fn tree &key level-min level-max cons-mode)
   "recursively applies fn to atoms in tree"
@@ -154,7 +138,28 @@
                      (funcall fn (car tree))
                    (car tree))
                  (funcall-nondeterministic-rec-internal2 fn (cdr tree) level level-min level-max)))))
-(defun mapr (fn tree)
+
+(cl:defun set-equal (list1 list2 &key (key #'cl:identity) (test #'cl:eq))
+  (null (set-difference list1 list2 :key key :test test)))
+
+(cl:defun permut-random (input)
+  (labels
+      ((takeout (i list)
+        (cond ((= i 0) (subseq list 1 (length list)))
+              ((= i (1- (length list))) (butlast list))
+              (t (append
+                  (subseq list 0 i)
+                  (subseq list (1+ i) (length list)))))))
+    (let ((list (copy-seq input))
+          (r nil))
+      (loop for i from 0 while (< i (length input)) do
+            (unless (= 0 (length list))
+              (let ((j (random (length list))))
+                (push (elt list j) r)
+                (setf list (takeout j list)))))
+      r)))
+
+(defun mapr (fn tree) ; ?
   (cond ((null tree) nil)
         ((listp tree)
          (append (list (cond ((some #'listp tree) (mapr fn (car tree)))

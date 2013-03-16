@@ -32,6 +32,49 @@
                (mapcar #'(lambda (x) (mapcar #'%12v (list-v x (car x))))
                        (mapcar #'(lambda (i) (rotate set2 i))
                                (arithm-ser 0 (1- (length set2)) 1)))))))))
+
+(define-box pcset-filter (&key (card 3) (ivs<= nil) (ivs>= nil))
+  :icon 324
+  (labels
+      ((pcset< (list1 list2)
+         (let ((set1 (sort list1 #'<))
+               (set2 (sort list2 #'<)))
+           (let ((span1 (- (car (reverse set1)) (car set1)))
+                 (span2 (- (car (reverse set2)) (car set2))))
+             (cond ((= span1 span2)
+                    (< (apply #'+ set1) (apply #'+ set2)))
+                   (t
+                    (< span1 span2)))))))
+    (let ((setlist
+           (all-values 
+             (let ((pcset (mapcar #'(lambda (x) (an-integer-betweenv 0 11)) (make-sequence 'list card))))
+               (assert! (=v (car pcset) 0))
+               (assert! (apply #'<v pcset))
+               (let ((ivs (mapcar #'(lambda (x) (modv x 12))
+                                  (mapcar #'(lambda (x) (-v (cadr x) (car x)))
+                                          (nPr pcset 2))))
+                     (keys (remove-duplicates (append (mapcar #'car ivs<=) (mapcar #'car ivs>=)))))
+                 (if (>= *mess* 20) (print (format nil "ivs <> keys: ~A" keys)))
+                 (assert!
+                  (cond
+                   ((null keys) t)
+                   (t
+                    (apply 
+                     #'andv
+                     (mapcar
+                      #'(lambda (i)
+                          (let ((i<= (system:cdr-assoc i ivs<=))
+                                (i>= (system:cdr-assoc i ivs>=))
+                                (c (apply #'count-truesv (mapcar #'(lambda (x) (=v i x)) ivs))))
+                            (andv (if i<= (<=v c i<=) t)
+                                  (if i>= (>=v c i>=) t))))
+                      keys)))))
+                 (solution pcset (static-ordering #'linear-force)))))))
+      (cond ((>= *mess* 30) (print (format nil "unfiltered set list: ~A" setlist)))
+            ((>= *mess* 20) (print (format nil "sets: (~A)" (length setlist)))))
+      (remove-duplicates (sort setlist #'pcset<)
+                         :test #'pcset=
+                         :from-end t))))
    
 (define-box seqc-xl-pcsets=v ((seqc ((60 60 60)
                                      (64 64 64)
