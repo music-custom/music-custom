@@ -6,38 +6,6 @@
 (defun %12v (x) (modv x 12))
 (defun mod12v (x) (modv x 12))
 
-(define-box pcset= ((set1 (0 4 7)) (set2 (60 64 67)) &optional process-pcset-inverse)
-  :icon 324
-  (labels
-      ((list- (list value) (mapcar #'(lambda (x) (- x value)) list)))
-    (cond
-     (process-pcset-inverse
-      (or (pcset= set1 set2 nil)
-          (pcset= (listdxx (reverse (listdx set1))) set2 nil)))
-     (t      
-      (let ((pcs1 (mapcar #'%12 (list- set1 (car set1)))))
-        (some
-         #'(lambda (x) (not (null x)))
-         (mapcar #'(lambda (pcs2) (null (set-difference pcs1 pcs2)))
-                 (mapcar #'(lambda (x) (mapcar #'%12 (list- x (car x))))
-                         (mapcar #'(lambda (i) (rotate set2 i))
-                                 (arithm-ser 0 (1- (length set2)) 1))))))))))
-
-(define-box pcset=v ((set1 (0 4 7)) (set2 (60 64 67)) &optional process-pcset-inverse)
-  :icon 324
-  (cond
-   (process-pcset-inverse
-    (orv (pcset=v set1 set2 nil)
-         (pcset=v (listdxxv (reverse (listdxv set1))) set2 nil)))
-   (t
-    (let ((pcs1 (mapcar #'%12v (list-v set1 (car set1)))))
-      (reduce-chunks
-       #'orv
-       (mapcar #'(lambda (pcs2) (set-equalv pcs1 pcs2))
-               (mapcar #'(lambda (x) (mapcar #'%12v (list-v x (car x))))
-                       (mapcar #'(lambda (i) (rotate set2 i))
-                               (arithm-ser 0 (1- (length set2)) 1)))))))))
-
 (define-box pcset-filter (&key (card 3) ivs<= ivs>= process-pcset-inverse)
   :icon 324
   (labels
@@ -80,6 +48,38 @@
       (remove-duplicates (sort setlist #'pcset<)
                          :test #'pcset=
                          :from-end t))))
+
+(define-box pcset= ((set1 (0 4 7)) (set2 (60 64 67)) &optional process-pcset-inverse)
+  :icon 324
+  (labels
+      ((list- (list value) (mapcar #'(lambda (x) (- x value)) list)))
+    (cond
+     (process-pcset-inverse
+      (or (pcset= set1 set2 nil)
+          (pcset= (listdxx (reverse (listdx set1))) set2 nil)))
+     (t      
+      (let ((pcs1 (mapcar #'%12 (list- set1 (car set1)))))
+        (some
+         #'(lambda (x) (not (null x)))
+         (mapcar #'(lambda (pcs2) (null (set-difference pcs1 pcs2)))
+                 (mapcar #'(lambda (x) (mapcar #'%12 (list- x (car x))))
+                         (mapcar #'(lambda (i) (rotate set2 i))
+                                 (arithm-ser 0 (1- (length set2)) 1))))))))))
+
+(define-box pcset=v ((set1 (0 4 7)) (set2 (60 64 67)) &optional process-pcset-inverse)
+  :icon 324
+  (cond
+   (process-pcset-inverse
+    (orv (pcset=v set1 set2 nil)
+         (let ((inv1 (listdxxv (reverse (listdxv (mapcar #'%12v set1))))))
+           (assert! (=v (car inv1) 0))
+           (pcset=v inv1 set2 nil))))
+   (t
+    (let ((pcs1 (mapcar #'%12v (list-v set1 (car set1)))))
+      (apply #'orv (mapcar #'(lambda (pcs2) (set-equalv pcs1 pcs2))
+                           (mapcar #'(lambda (i) (mapcar #'%12v (list-v set2 (elt set2 i))))
+                                   (arithm-ser 0 (1- (length set2)) 1))))))))
+
    
 (define-box seqc-xl-pcsets=v ((seqc ((60 60 60)
                                      (64 64 64)
@@ -89,7 +89,7 @@
                                      (0 2 5)))
                               &key process-pcset-inverse)
   :icon 324
-  (let ((seqcx (remove-duplicates (mat-trans (flatten-seqc seqc)) :test #'set-difference-eq)))
+  (let ((seqcx (remove-duplicates (mat-trans (flatten-seqc seqc)) :test #'set-equal)))
     (reduce-chunks
      #'andv
      (maplist
@@ -97,7 +97,7 @@
           (if (>= *mess* 5) (print (format nil "seqc-xl-pcsets=v ~A / ~A" (1+ (- (length seqcx) (length x))) (length seqcx))))
           (reduce-chunks
            #'orv
-           (mapcar #'(lambda (y) (pcset=v (car x) y process-pcset-inverse)) sets)))
+           (mapcar #'(lambda (y) (pcset=v y (car x) process-pcset-inverse)) sets)))
       seqcx))))
 
 (define-box list-nsucc<>v (list step)
