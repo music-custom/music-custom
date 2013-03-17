@@ -270,12 +270,14 @@
   (assert! (integerpv n))
   (assert! (integerpv d))
   (let ((nR (a-realv))
-        (dR (a-realv)))
+        (dR (a-realv))
+        (x (an-integerv)))
     (assert! (=v nR n))
     (assert! (=v dR d))
-    (let ((m (an-integer-betweenv 0 (-v d 1))))
-      (assert! (=v m (-v n (*v d (floorv (/v nR dR))))))
-      m)))
+    (assert! (>=v x 0))
+    (assert! (<v x d))
+    (assert! (=v x (-v n (*v d (floorv (/v nR dR))))))
+    x))
 
 (defun modv (n d) (%v n d))
 
