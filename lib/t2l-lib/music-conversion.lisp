@@ -1,10 +1,6 @@
 (in-package :t2l)
 
 
-(defun %12 (x) (mod x 12))
-(defun mod12 (x) (mod x 12))
-(defun %12v (x) (modv x 12))
-(defun mod12v (x) (modv x 12))
 
 (define-box pcset-filter (&key (card 3) ivs<= ivs>= process-pcset-inverse)
   :icon 324
@@ -114,23 +110,6 @@
           (equalv (modv x (a-member-ofv ds)) 0))
       (mapcar #'(lambda (x) (ifv (<v x 1) (funcallv #'/ 1 x) x)) (flat ratios))))))
 
-(define-box seqc-xl-ival-members-var (list &key (ivalset (3 4 5 7 8 9)) debug)
-  :indoc '("" "")
-  :icon 324
-  :doc ""
-  (let ((pairs (remove-duplicates  
-                (flat1
-                 (mapcar 
-                  #'(lambda (xs) (nPr xs 2))
-                  (mat-trans (flatten-seqc (remove nil list)))))
-                :test #'set-difference-eq)))
-    (if (>= *mess* 33) (lprint 'seqc-xl-ival-members-var 'pairs pairs))
-    (let ((ivs (mapcar #'(lambda (xs)
-                           (modv (-v (car xs) (cadr xs)) 12))
-                       pairs)))
-      (if (>= *mess* 33) (lprint 'seqc-xl-ival-members-var 'ivs ivs))
-      (all-memberv ivs ivalset))))
-
 (define-box simultaneous-event-count-minv (seqc &key (ratio 0.2))
   :indoc '("input" "mode")
   :icon 324
@@ -177,32 +156,11 @@
 (define-box seqcx-ival-countv (seqc &key ivs<= ivs>= mode)
   :icon 324
   :doc "" 
-  (let ((seqc-xl (remove nil (mat-trans (flatten-seqc seqc)))))
+  (let ((seqc-xl (remove-duplicates (mat-trans (flatten-seqc seqc)) 
+                                    :test #'set-equal)))
     (cond
      ((and mode (= mode 1))
-      (reduce-chunks 
-       #'andv
-       (mapcar
-        #'(lambda (s)
-            (let ((ivs (mapcar #'(lambda (x) (modv x 12))
-                               (mapcar #'(lambda (x) (-v (cadr x) (car x)))
-                                       (nPr s 2))))
-                  (keys (remove-duplicates (append (mapcar #'car ivs<=) (mapcar #'car ivs>=)))))
-              (if (>= *mess* 20) (print (format nil "ivs <> keys: ~A" keys)))
-              (cond
-               ((null keys) t)
-               (t
-                (apply 
-                 #'andv
-                 (mapcar
-                  #'(lambda (i)
-                      (let ((i<= (system:cdr-assoc i ivs<=))
-                            (i>= (system:cdr-assoc i ivs>=))
-                            (c (apply #'count-truesv (mapcar #'(lambda (x) (=v i x)) ivs))))
-                        (andv (if i<= (<=v c i<=) t)
-                              (if i>= (>=v c i>=) t))))
-                  keys))))))
-        seqc-xl)))
+      (seqcx-ival-countv-internal2 seqc-xl ivs<= ivs>=))
      (t
       (seqcx-ival-countv-internal seqc-xl ivs<= ivs>=)))))
 
@@ -269,6 +227,53 @@
                  (t 
                   (>=v (elt totals i) (elt targets>= i)))))
             '(0 1 2 3 4 5 6)))))))))
+
+(defun seqcx-ival-countv-internal2 (seqc-xl ivs<= ivs>=)
+  (let ((pairs (remove-duplicates (flat1 (mapcar #'(lambda (x) (nPr x 2)) seqc-xl))
+                                  :test #'set-equal)))
+    (let ((pair-ivs-assoc (mapcar #'(lambda (p) (cons p (modv (-v (cadr p) (car p)) 12))) pairs)))
+      (reduce-chunks 
+       #'andv
+       (mapcar
+        #'(lambda (s)
+            (let ((ivs (mapcar #'(lambda (x) (cdr-assoc x pair-ivs-assoc :test #'set-equal))
+                               (nPr s 2)))
+                  (keys (remove-duplicates (append (mapcar #'car ivs<=) (mapcar #'car ivs>=)))))
+              (cond
+               ((null keys) t)
+               (t
+                (apply 
+                 #'andv
+                 (mapcar
+                  #'(lambda (i)
+                      (let ((i<= (system:cdr-assoc i ivs<=))
+                            (i>= (system:cdr-assoc i ivs>=))
+                            (c (apply #'count-truesv (mapcar #'(lambda (x) (cond ((= i 0) (=v x 0))
+                                                                                 ((= i 1) (orv (=v x 1) (=v x 11)))
+                                                                                 ((= i 2) (orv (=v x 2) (=v x 10)))
+                                                                                 ((= i 3) (orv (=v x 3) (=v x 9)))
+                                                                                 ((= i 4) (orv (=v x 4) (=v x 8)))
+                                                                                 ((= i 5) (orv (=v x 5) (=v x 7)))
+                                                                                 (t (=v x i))))
+                                                             ivs))))
+                        (andv (if i<= (<=v c i<=) t)
+                              (if i>= (>=v c i>=) t))))
+                  keys))))))
+        seqc-xl)))))
+
+(define-box seqc-xl-ival-members-var (list &key (ivalset (3 4 5 7 8 9)) debug)
+  :indoc '("" "")
+  :icon 324
+  :doc ""
+  (let ((pairs (remove-duplicates  
+                (flat1
+                 (mapcar 
+                  #'(lambda (xs) (nPr xs 2))
+                  (mat-trans (flatten-seqc (remove nil list)))))
+                :test #'set-equal)))
+    (let ((ivs (mapcar #'(lambda (xs) (modv (-v (cadr xs) (car xs)) 12))
+                       pairs)))
+      (all-memberv ivs ivalset))))
 
 (defun seqc-ms-ratios-funcallv (fn seqc)
   (apply #'andv (mapcar fn (mapcar #'flat (seqc-ms->ratios (remove nil seqc))))))
@@ -525,4 +530,11 @@
     ;(mapcar #'(lambda (x) (assert! (memberv x '(3 4 5 7 8 9)))) ivals)
     (assert! (=v (car (reverse ivals)) 12))
     (assert! (memberv (-v (car (reverse v)) (cadr (reverse v))) '(2 1 -1 -2)))
-    seqc))    
+    seqc)) 
+
+
+
+(defun %12 (x) (mod x 12))
+(defun mod12 (x) (mod x 12))
+(defun %12v (x) (modv x 12))
+(defun mod12v (x) (modv x 12))   
