@@ -174,12 +174,16 @@
               counts
               (mapcar #'(lambda (x) (*v ratio x)) totals)))))))))
 
-(define-box seqcx-ival-countv (seqc ival-assoc)
+(define-box seqcx-ival-countv (seqc ival-assoc &optional mode)
   :indoc '("" "" )
   :icon 324
   :doc "" 
   (assert (< (apply #'max (mapcar #'car ival-assoc)) 7))
-  (seqcx-ival-countv-internal (mat-trans (flatten-seqc seqc)) ival-assoc))
+  (cond
+   ((= mode 1)
+    t)
+   (t
+    (seqcx-ival-countv-internal (mat-trans (flatten-seqc seqc)) ival-assoc))))
    #|(mapcar 
     #'(lambda (xs) (seqcx-ival-countv-internal xs ival-assoc)) 
     (nsucc (mat-trans (flatten-seqc  (remove nil seqc))) 128 :step 128))))|#
