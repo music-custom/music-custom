@@ -174,17 +174,39 @@
               counts
               (mapcar #'(lambda (x) (*v ratio x)) totals)))))))))
 
-(define-box seqcx-ival-countv (seqc ival-assoc)
-  :indoc '("" "" )
+(define-box seqcx-ival-countv (seqc &key ivs<= ivs>= mode)
   :icon 324
   :doc "" 
-  (assert (< (apply #'max (mapcar #'car ival-assoc)) 7))
-  (seqcx-ival-countv-internal (mat-trans (flatten-seqc seqc)) ival-assoc))
-   #|(mapcar 
-    #'(lambda (xs) (seqcx-ival-countv-internal xs ival-assoc)) 
-    (nsucc (mat-trans (flatten-seqc  (remove nil seqc))) 128 :step 128))))|#
+  (let ((seqc-xl (remove nil (mat-trans (flatten-seqc seqc)))))
+    (cond
+     ((and mode (= mode 1))
+      (reduce-chunks 
+       #'andv
+       (mapcar
+        #'(lambda (s)
+            (let ((ivs (mapcar #'(lambda (x) (modv x 12))
+                               (mapcar #'(lambda (x) (-v (cadr x) (car x)))
+                                       (nPr s 2))))
+                  (keys (remove-duplicates (append (mapcar #'car ivs<=) (mapcar #'car ivs>=)))))
+              (if (>= *mess* 20) (print (format nil "ivs <> keys: ~A" keys)))
+              (cond
+               ((null keys) t)
+               (t
+                (apply 
+                 #'andv
+                 (mapcar
+                  #'(lambda (i)
+                      (let ((i<= (system:cdr-assoc i ivs<=))
+                            (i>= (system:cdr-assoc i ivs>=))
+                            (c (apply #'count-truesv (mapcar #'(lambda (x) (=v i x)) ivs))))
+                        (andv (if i<= (<=v c i<=) t)
+                              (if i>= (>=v c i>=) t))))
+                  keys))))))
+        seqc-xl)))
+     (t
+      (seqcx-ival-countv-internal seqc-xl ivs<= ivs>=)))))
 
-(defun seqcx-ival-countv-internal (seqc-xl ival-assoc)
+(defun seqcx-ival-countv-internal (seqc-xl ivs<= ivs>=)
   (if (or (null seqc-xl) (= (length (car seqc-xl)) 1))
       t    
     (let* ((pairs (remove-duplicates
@@ -202,16 +224,22 @@
        ((null ivs) t)
        (t 
         (let* ((seqc-ivals (flat ivs))
-               (targets (mapcar
-                         #'(lambda (i) (let ((c (cdr-assoc i ival-assoc)))
-                                         (cond ((null c) nil)
-                                               ((atom c) (* c (length seqc-ivals)))
-                                               (t (* (car c) (length seqc-ivals))))))
-                         '(0 1 2 3 4 5 6)))
+               (targets<= (mapcar
+                           #'(lambda (i) (let ((c (cdr-assoc i ivs<=)))
+                                           (cond ((null c) nil)
+                                                 ((atom c) (* c (length seqc-ivals)))
+                                                 (t (* (car c) (length seqc-ivals))))))
+                           '(0 1 2 3 4 5 6)))
+               (targets>= (mapcar
+                           #'(lambda (i) (let ((c (cdr-assoc i ivs>=)))
+                                           (cond ((null c) nil)
+                                                 ((atom c) (* c (length seqc-ivals)))
+                                                 (t (* (car c) (length seqc-ivals))))))
+                           '(0 1 2 3 4 5 6)))
                (totals (mapcar
                         #'(lambda (i) 
                             (cond
-                             ((null (elt targets i)) nil)
+                             ((and (null (elt targets<= i)) (null (elt targets>= i))) nil)
                              ;; to stay within Lispworks CALL-ARGUMENTS-LIMIT of 2047 this is processed in chunks
                              ((= i 1)
                               (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (orv (=v y 1) (=v y 11))) x))) (nsucc seqc-ivals 512 :step 512))))
@@ -226,29 +254,21 @@
                              (t
                               (reduce #'+v (mapcar #'(lambda (x) (apply #'count-truesv (mapcar #'(lambda (y) (=v y i)) x))) (nsucc seqc-ivals 512 :step 512))))))
                         '(0 1 2 3 4 5 6))))
-          (if (>= *mess* 4) (print (apply
-                                    #'concatenate
-                                    (append 
-                                     (list 'string)
-                                     (list (format nil "seqcx-ival-countv~%"))
-                                     (mapcar
-                                      #'(lambda (i)
-                                          (format nil
-                                                  "i: ~A ~A ?<= ~A~%"
-                                                  i
-                                                  (if (elt totals i) (value-of (elt totals i)))
-                                                  (if (elt targets i) (value-of (elt targets i)))))
-                                      '(0 1 2 3 4 5 6))))))
-          (if (>= *mess* 7) (print (format nil "ivs (~A): ~A" (length ivs) ivs)))
-          (apply #'andv
-                 (print
-                  (mapcar
-                   #'(lambda (i) (if (and (elt totals i) (elt targets i)) 
-                                     (if (< (elt targets i) 0)
-                                         (>=v (elt totals i) (* -1 (elt targets i)))
-                                       (<=v (elt totals i) (elt targets i)))
-                                   t))
-                   '(0 1 2 3 4 5 6))))))))))
+          (if (>= *mess* 7) (print (format nil "targets<=: ~A~%targets>=: ~A~%totals: ~A" targets<= targets>= totals)))
+          (apply 
+           #'andv
+           (mapcar
+            #'(lambda (i) 
+                (cond
+                 ((null (elt totals i)) t)
+                 ((and (elt targets<= i) (elt targets>= i))
+                  (andv (<=v (elt targets<= i) (elt totals i))
+                        (>=v (elt targets>= i) (elt totals i))))
+                 ((elt targets<= i)
+                  (<=v (elt totals i) (elt targets<= i)))
+                 (t 
+                  (>=v (elt totals i) (elt targets>= i)))))
+            '(0 1 2 3 4 5 6)))))))))
 
 (defun seqc-ms-ratios-funcallv (fn seqc)
   (apply #'andv (mapcar fn (mapcar #'flat (seqc-ms->ratios (remove nil seqc))))))
