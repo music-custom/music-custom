@@ -1819,14 +1819,14 @@
       (if predicate (funcall predicate l))
       l)))
 
-(cl:defun print-divide-and-conquer-force (x)
+(defun print-divide-and-conquer-force (x)
   "print messages when t2l::*mess* >= 30"
   (if (>= *mess* 30) (print (format nil "divide-and-conquer-force IN: ~A" x)))
   (divide-and-conquer-force x)
   (if (>= *mess* 30) (print (format nil "divide-and-conquer-force OUT: ~A~%" x)))
   x)
 
-(cl:defun print-linear-force (x)
+(defun print-linear-force (x)
   "print messages when t2l::*mess* >= 30"
   (if (>= *mess* 30) (print (format nil "linear-force IN: ~A" x)))
   (linear-force x)
