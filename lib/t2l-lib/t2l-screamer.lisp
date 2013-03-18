@@ -4,11 +4,6 @@
 (defvar *mess* 0)
 (defvar *fuzz* 1d-6)
 
-
-
-
-
-
 (defun ith-random-value (n expression)
   (one-value
    (ith-value (a-random-member-of (arithm-ser 0 n 1))
@@ -202,6 +197,7 @@
 
 (defun a-random-member-of (list)
   (a-member-of (permut-random list)))
+
 (defun a-random-member-ofv (list)
   (a-member-ofv (permut-random list)))
 
