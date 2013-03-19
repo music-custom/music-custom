@@ -1674,7 +1674,7 @@
         (let ((z (a-member-of y)))
           (cons (cons (first x) z) (remove z y :test #'eq :count 1)))))))
 
-(defun an-ordered-partition-of (x &optional c)
+(defun an-ordered-partition-of (x)
   (cond ((null x) nil)
         ((null (cdr x)) (list x))
         (t 
@@ -1682,6 +1682,22 @@
            (either
              (cons (list (first x)) y)
              (cons (cons (first x) (first y)) (rest y)))))))
+
+(defun n-partitions-of (n x)
+  (let ((isv (mapcar #'(lambda (y) (an-integer-betweenv 1 (length x)))
+                     (make-sequence 'list n))))
+    (assert! (=v (reduce-chunks #'+v isv) (length x)))
+    (let ((s (solution isv (static-ordering #'linear-force))))
+      (cond
+       ((null s) nil)
+       (t
+        (reverse 
+         (maplist #'(lambda (is) 
+                      (let ((a (- (length x) (apply #'+ is)))
+                            (b (- (length x) (if (cdr is) (apply #'+ (cdr is)) 0))))
+                        (subseq x a b)))
+                  (reverse s))))))))
+  
 
 (defun a-partition-having (x &optional partition-fn element-fn)
   (let ((a (a-partition-of x)))

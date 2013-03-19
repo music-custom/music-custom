@@ -240,16 +240,15 @@
                            (ordered-partitions-of (list card)
                              (if (>= *mess* 10) (print (format nil "ordered-partitions-of list: (~A) card: ~A" (length list) card)))
                              (let ((ps (all-values
-                                         (let ((p (an-ordered-partition-of list)))
-                                           (unless (and (= (length card) (length p))
-                                                        (every
-                                                         #'(lambda (x y)
-                                                             (and (or (null (car x))
-                                                                      (>= y (car x)))
-                                                                  (or (null (cdr x))
-                                                                      (<= y (cdr x)))))
-                                                         card
-                                                         (mapcar #'length p)))
+                                         (let ((p (n-partitions-of (length card) list)))
+                                           (unless (every
+                                                    #'(lambda (x y)
+                                                        (and (or (null (car x))
+                                                                 (>= y (car x)))
+                                                             (or (null (cdr x))
+                                                                 (<= y (cdr x)))))
+                                                    card
+                                                    (mapcar #'length p))
                                              (fail))
                                            p))))
                                (if (>= *mess* 10) (print (format nil "ordered-partitions-of ps (~A)" (length ps))))
