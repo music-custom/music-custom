@@ -238,22 +238,11 @@
                                    ((screamer::variable? x) (screamer::variable-name x))
                                    (t x)))
                            (ordered-partitions-of (list card)
-                             (if (>= *mess* 10) (print (format nil "ordered-partitions-of list: (~A) card: ~A" (length list) card)))
-                             (let ((ps (all-values
-                                         (let ((p (n-partitions-of (length card) list)))
-                                           (unless (every
-                                                    #'(lambda (x y)
-                                                        (and (or (null (car x))
-                                                                 (>= y (car x)))
-                                                             (or (null (cdr x))
-                                                                 (<= y (cdr x)))))
-                                                    card
-                                                    (mapcar #'length p))
-                                             (fail))
-                                           p))))
-                               (if (>= *mess* 10) (print (format nil "ordered-partitions-of ps (~A)" (length ps))))
+                             (let ((ps (all-values (n-partitions-of2 card list))))
+                               (if (>= *mess* 20) (print (format nil "~A ordered-partitions-of list: (~A) card: ~A" (length ps) (length list) card)))
                                ps))
                            (maprule (xs r)
+                             (if (>= *mess* 20) (print (format nil "maprule xs: (~A) r: ~A" (length xs) r)))
                              (cond
                               ((null xs) nil)
                               ((listp r)

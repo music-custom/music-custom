@@ -1683,20 +1683,57 @@
              (cons (list (first x)) y)
              (cons (cons (first x) (first y)) (rest y)))))))
 
+(defun n-partitions-of-idx-list-internal (n s)
+  (cond
+   ((> n s) (fail))
+   ((= n 1) (list s))   
+   ((> n 1)
+    (let ((i (an-integer-between 1 (- s (1- n)))))
+      (append (list i) (n-partitions-of-idx-list-internal (1- n) (- s i)))))
+   (t
+    nil)))
+
+(defun n-partitions-of-idx-list-internal2 (s cs)  
+  (cond
+   ((and (> s 0) (null cs)) (fail))
+   ((null cs) nil)
+   ((< s 0) (fail))
+   ((< s (apply #'+ (mapcar #'car cs))) (fail))
+   ((and (every #'cdr cs)
+         (> s (apply #'+ (mapcar #'cdr cs)))) (fail))
+   (t
+    (let ((c (car cs)))
+      (let ((min (car c))
+            (max (cond
+                  ((cdr c) (min (cdr c) (- s (apply #'+ (mapcar #'car (cdr cs))))))
+                  (t (- s (apply #'+ (mapcar #'car (cdr cs))))))))
+        (let ((a (an-integer-between min max)))
+          (append (list a)
+                  (n-partitions-of-idx-list-internal2 (- s a) (cdr cs)))))))))
+
+(defun n-partitions-of2 (cs x)
+  (let ((s (n-partitions-of-idx-list-internal2 (length x) cs)))
+    (cond
+     ((null s) nil)
+     (t
+      (reverse 
+       (maplist #'(lambda (is) 
+                    (let ((a (- (length x) (apply #'+ is)))
+                          (b (- (length x) (if (cdr is) (apply #'+ (cdr is)) 0))))
+                      (subseq x a b)))
+                (reverse s)))))))
+
 (defun n-partitions-of (n x)
-  (let ((isv (mapcar #'(lambda (y) (an-integer-betweenv 1 (length x)))
-                     (make-sequence 'list n))))
-    (assert! (=v (reduce-chunks #'+v isv) (length x)))
-    (let ((s (solution isv (static-ordering #'linear-force))))
-      (cond
-       ((null s) nil)
-       (t
-        (reverse 
-         (maplist #'(lambda (is) 
-                      (let ((a (- (length x) (apply #'+ is)))
-                            (b (- (length x) (if (cdr is) (apply #'+ (cdr is)) 0))))
-                        (subseq x a b)))
-                  (reverse s))))))))
+  (let ((s (n-partitions-of-idx-list-internal n (length x))))
+    (cond
+     ((null s) nil)
+     (t
+      (reverse 
+       (maplist #'(lambda (is) 
+                    (let ((a (- (length x) (apply #'+ is)))
+                          (b (- (length x) (if (cdr is) (apply #'+ (cdr is)) 0))))
+                      (subseq x a b)))
+                (reverse s)))))))
   
 
 (defun a-partition-having (x &optional partition-fn element-fn)
