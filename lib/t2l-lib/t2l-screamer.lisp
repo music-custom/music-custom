@@ -1674,7 +1674,7 @@
         (let ((z (a-member-of y)))
           (cons (cons (first x) z) (remove z y :test #'eq :count 1)))))))
 
-(defun an-ordered-partition-of (x)
+(defun an-ordered-partition-of (x &optional c)
   (cond ((null x) nil)
         ((null (cdr x)) (list x))
         (t 

@@ -135,15 +135,12 @@
                                ((terminal-sym? s) 1)
                                ((position s syms) nil)
                                (t
-                                ;(lprint 'findmin 's s)
                                 (push s syms)
                                 (let ((rs (mapcar #'findmin (cdr-assoc s dmg-sym-assoc))))
                                   (cond
                                    ((and-sym? s) (reduce #'+ (mapcar #'(lambda (x) (if (null x) 1 x)) rs)))
                                    ((null (remove nil rs)) 1)
-                                   (t 
-                                    ;(lprint 'findmin 'or-sym 's s 'rs rs)
-                                    (reduce #'min (mapcar #'(lambda (x) (if (null x) 1 x)) rs)))))))))
+                                   (t (reduce #'min (mapcar #'(lambda (x) (if (null x) 1 x)) rs)))))))))
                          (findmin sym))))
                    (dmg-and-syms (or-sym)                     
                      (let ((syms nil))
@@ -228,6 +225,11 @@
                                  cards)))))
                     (dolist (x (remove-if-not #'or-sym? (mapcar #'car dmg-sym-assoc)))
                       (setf (cdr-assoc x or-sym-domain-assoc) (dmg-sym-domain x)))
+                    (if print-graph-info
+                        (progn
+                          (print (format nil "___________~%~A" rule-card-assoc))
+                          (mapcar #'(lambda (s) (print (format nil "sym: ~A  ~A" s (cdr-assoc s rule-card-assoc))))
+                                (mapcar #'car rule-card-assoc))))
                     (let ((first-var (car vars))
                           (last-var (last-atom vars)))
                       (labels
@@ -236,24 +238,27 @@
                                    ((screamer::variable? x) (screamer::variable-name x))
                                    (t x)))
                            (ordered-partitions-of (list card)
-                             (all-values
-                               (let ((p (an-ordered-partition-of list)))
-                                 (unless (and (= (length card) (length p))
-                                              (every
-                                               #'(lambda (x y)
-                                                   (and (or (null (car x))
-                                                            (>= y (car x)))
-                                                        (or (null (cdr x))
-                                                            (<= y (cdr x)))))
-                                               card
-                                               (mapcar #'length p)))
-                                   (fail))
-                                 p)))
+                             (if (>= *mess* 10) (print (format nil "ordered-partitions-of list: (~A) card: ~A" (length list) card)))
+                             (let ((ps (all-values
+                                         (let ((p (an-ordered-partition-of list)))
+                                           (unless (and (= (length card) (length p))
+                                                        (every
+                                                         #'(lambda (x y)
+                                                             (and (or (null (car x))
+                                                                      (>= y (car x)))
+                                                                  (or (null (cdr x))
+                                                                      (<= y (cdr x)))))
+                                                         card
+                                                         (mapcar #'length p)))
+                                             (fail))
+                                           p))))
+                               (if (>= *mess* 10) (print (format nil "ordered-partitions-of ps (~A)" (length ps))))
+                               ps))
                            (maprule (xs r)
                              (cond
                               ((null xs) nil)
                               ((listp r)
-                               (reduce
+                               (reduce-chunks
                                 #'orv
                                 (mapcar
                                  #'(lambda (p)
@@ -275,9 +280,8 @@
                                 ((assoc (car xs) (cdr-assoc r term-sym-xs-assoc))
                                  (cdr-assoc (car xs) (cdr-assoc r term-sym-xs-assoc)))
                                 (t
-                                 (setf (cdr-assoc (car xs) (cdr-assoc r term-sym-xs-assoc))                                     
+                                 (setf (cdr-assoc (car xs) (cdr-assoc r term-sym-xs-assoc))
                                        (cond
-                                                 ;((cdr xs) nil)
                                         ((or symbol-mode
                                              (not (numberp r)))
                                          (equalv (car xs) r))
@@ -322,23 +326,24 @@
                                              (reduce #'orv vs)
                                            (car vs)))))))))
                               ((or-sym? r)
-                               (cond ((cdr xs)
-                                      (apply
-                                       #'orv
-                                       (mapcar
-                                        #'(lambda (x) (maprule (ordered-partitions-of xs (cdr-assoc (car x) rule-card-assoc)) x))
-                                        (cdr-assoc r or-and-sym-assoc))))
-                                     (t 
-                                      (let ((existing-var (find (cons r xs) or-sym-xs-assoc :key #'car :test #'list-eq)))
-                                        (cond (existing-var (cadr existing-var))
-                                              (t 
-                                               (let ((var (reduce 
-                                                           #'orv
-                                                           (mapcar
-                                                            #'(lambda (term) (maprule xs term))
-                                                            (cdr-assoc r or-sym-domain-assoc)))))
-                                                 (push (list (cons r xs) var) or-sym-xs-assoc)
-                                                 var)))))))
+                               (cond 
+                                ((cdr xs)
+                                 (apply
+                                  #'orv
+                                  (mapcar
+                                   #'(lambda (x) (maprule (ordered-partitions-of xs (cdr-assoc (car x) rule-card-assoc)) x))
+                                   (cdr-assoc r or-and-sym-assoc))))
+                                (t 
+                                 (let ((existing-var (find (cons r xs) or-sym-xs-assoc :key #'car :test #'list-eq)))
+                                   (cond (existing-var (cadr existing-var))
+                                         (t 
+                                          (let ((var (reduce 
+                                                      #'orv
+                                                      (mapcar
+                                                       #'(lambda (term) (maprule xs term))
+                                                       (cdr-assoc r or-sym-domain-assoc)))))
+                                            (push (list (cons r xs) var) or-sym-xs-assoc)
+                                            var)))))))
                               (t nil))))
                         (values (andv (all-memberv vars terminals)
                                       (maprule vars (name dmg))) 
