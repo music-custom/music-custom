@@ -786,6 +786,13 @@ is replaced with replacement."
                        (tree-count (cdr l1))))
         (t 1)))
 
+(cl:defun remove-consecutive-duplicates (list &key (test #'eql))
+  (let (c)
+    (loop for i from 0 while (< i (length list))
+          do (unless (and c (funcall test (elt list i) (car c)))
+               (push (elt list i) c)))
+    (reverse c)))
+
 (cl:defun nsucc (input n &key step list-padding pad-character)
   (cond
    ((null step) (nsucc input n :step (1- n) :list-padding list-padding :pad-character pad-character))
