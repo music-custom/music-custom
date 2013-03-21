@@ -271,7 +271,7 @@
                   #'(lambda (xs) (nPr xs 2))
                   (mat-trans (flatten-seqc (remove nil list)))))
                 :test #'set-equal)))
-    (let ((ivs (mapcar #'(lambda (xs) (modv (-v (cadr xs) (car xs)) 12))
+    (let ((ivs (mapcar #'(lambda (xs) (modv (absv (-v (cadr xs) (car xs))) 12))
                        pairs)))
       (all-memberv ivs ivalset))))
 
