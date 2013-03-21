@@ -234,7 +234,7 @@
 (defun absv (k)
   (maxv k (*v k -1)))
 
-(defun modv (n d) 
+#|(defun modv (n d) 
   (assert! (/=v d 0))
   (let ((nR (a-realv))
         (dR (a-realv)))     
@@ -243,7 +243,14 @@
     (let ((x (-v n (*v d (floorv (/v nR dR))))))      
       (assert! (>=v x (minv 0 (+v d 1))))
       (assert! (<=v x (maxv 0 (-v d 1))))
-      x)))
+      x)))|#
+
+(defun modv (n d)
+  (let ((x (an-integerv)))         
+    (assert! (>=v x (minv 0 (+v d 1))))
+    (assert! (<=v x (maxv 0 (-v d 1))))
+    (assert! (=v x (-v n (*v d (an-integerv)))))
+    x))
 
 (defun %v (n d) (modv n d))
 
