@@ -123,14 +123,15 @@
   (let ((z (a-booleanv)))
     (let ((noticer #'(lambda ()
                        (when (and (ground? x) (ground? y))
-                         (screamer::assert!-equalv z
-                                          (equalv (sort (value-of (members-ofv (apply-substitution x)))
-                                                        #'screamer<)
-                                                  (sort (value-of (members-ofv (apply-substitution y)))
-                                                        #'screamer<))))))))
+                         (local
+                           (screamer::assert!-equalv z
+                                                     (equalv (sort (value-of (members-ofv (apply-substitution x)))
+                                                                   #'screamer<)
+                                                             (sort (value-of (members-ofv (apply-substitution y)))
+                                                                   #'screamer<))))))))
       (screamer::attach-noticer! noticer x)
       (screamer::attach-noticer! noticer y)
-      z))
+      z)))
 
 
 ;;; This version of funcallv uses ground? to test the boundness of its arguments
