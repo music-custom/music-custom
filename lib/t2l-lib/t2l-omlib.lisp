@@ -20,9 +20,7 @@
         (init-rhythm-trees (reverse rhythm-trees)))
     (mapcar #'(lambda (x y) 
                 (let ((v (make-instance 'om::voice
-                                        :chords (if (not (some #'(lambda (y) (> y 127)) (flat seqc)))
-                                                    (om* (flat x) 100)
-                                                  (flat x))
+                                        :chords (if (some #'(lambda (y) (> y 127)) (flat x)) (flat x) (om* (flat x) 100))
                                         :tree y)))
                   (if bpm (setf (om::tempo v) bpm))
                   v))

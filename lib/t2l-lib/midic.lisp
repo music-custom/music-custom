@@ -514,7 +514,7 @@
                           (append segs-l (list diff))
                           nil)))
                (t 
-                (let ((diff (- (car ll) (reduce #'+ (mapcar #'duration segs-l)))))
+                (let ((diff (- (duration (car ll)) (reduce #'+ (mapcar #'duration segs-l)))))
                   (cond ((> diff 0)
                          (process-durations ll 
                                  (append segs-l (list (car segs-r)))
@@ -525,7 +525,6 @@
                            (let* ((a (duration (car (reverse segs-l))))
                                   (c (/ (* -1 diff) a))
                                   (b (/ (+ (duration (car (reverse segs-l))) diff) a))
-                                  ;(s (tree-sum (cadar (reverse segs-l))))
                                   (s (reduce #'+ (mapcar #'duration (cadar (reverse segs-l)))))
                                   (d (* b s))
                                   (e (* c s))
@@ -547,7 +546,7 @@
                                              segs-r)))))
                           (t (process-durations ll
                                      (append (butlast segs-l)
-                                             (list (+ (car (reverse segs-l)) diff)))
+                                             (list (+ (duration (car (reverse segs-l))) diff)))
                                      (append (list (* -1 diff))
                                              segs-r)))))
                         (t
@@ -556,14 +555,14 @@
                                                   nil
                                                   segs-r))))
                            r)))))))
-       (process-durations->timees (prps)
+       (process-durations->timees (ps)
          (mapcar ; ((1 2) (1 1))
           #'(lambda (m)
               (mapcar
                #'(lambda (n)
                    (make-timee :value n :flag t))
                m))
-          prps))
+          ps))
        (process-timee-flags (re)
          (let ((init-s (funcall-rec #'abs segs)) ; 
                (init-p (flat re)))
