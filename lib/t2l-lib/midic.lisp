@@ -464,13 +464,8 @@
   (read-from-string (concatenate 'string (write-to-string (car ms)) "//" (write-to-string (cadr ms)))))
 
 
-(defstruct rtrelem value flag)
-(defun prp-seg (l segs)
-  (if (>= *mess* 5) 
-      (print (format nil 
-                     ">> prp-seg list ~A segments ~A" 
-                     l 
-                     segs)))
+(defstruct timee value flag)
+(defun process-duration-groups-internal (l segs)
   (labels
       ((strip-zeros (l)
          (mapcar (lambda (x) (remove 0 x :test 'list-eq)) l))
@@ -492,13 +487,7 @@
                 (car group))
                ((listp group) 0)
                (t group)))
-       (prpseg (ll segs-l segs-r)
-         (if (>= *mess* 5) 
-             (print (format nil 
-                            ">> list ~A left-segments ~A right-segments ~A" 
-                            ll 
-                            segs-l
-                            segs-r)))
+       (process-durations (ll segs-l segs-r)
          (cond ((and (null ll)
                      (not (null segs-l))
                      (null segs-r)) 
@@ -506,9 +495,9 @@
                ((null ll) nil)
                ((and (null segs-l)
                      (null segs-r)) 
-                (prpseg ll (list (* (float -1) (float (car ll)))) nil))
+                (process-durations ll (list (* (float -1) (float (car ll)))) nil))
                ((null segs-l) 
-                (prpseg ll (list (car segs-r)) (cdr segs-r)))
+                (process-durations ll (list (car segs-r)) (cdr segs-r)))
                ((and (null segs-r)
                      (< (reduce #'+ (mapcar #'duration segs-l))
                         (car ll)))
@@ -516,18 +505,18 @@
                        (diff (float (* -1 (- (car ll) segs-l-duration)))))
                   (if (>= *mess* 15)
                       (print (format nil 
-                                     "prpseg add rest syms ll ~A segs-l ~A segs-l-duration ~A diff ~A"
+                                     "process-durations add rest syms ll ~A segs-l ~A segs-l-duration ~A diff ~A"
                                      ll
                                      segs-l
                                      segs-l-duration
                                      diff)))
-                  (prpseg ll ;(cdr ll)                             
+                  (process-durations ll ;(cdr ll)                             
                           (append segs-l (list diff))
                           nil)))
                (t 
                 (let ((diff (- (car ll) (reduce #'+ (mapcar #'duration segs-l)))))
                   (cond ((> diff 0)
-                         (prpseg ll 
+                         (process-durations ll 
                                  (append segs-l (list (car segs-r)))
                                  (cdr segs-r)))
                         ((< diff 0)
@@ -540,7 +529,7 @@
                                   (s (reduce #'+ (mapcar #'duration (cadar (reverse segs-l)))))
                                   (d (* b s))
                                   (e (* c s))
-                                  (groups (prp-seg (list d e) (cadar (reverse segs-l)))))
+                                  (groups (process-duration-groups-internal (list d e) (cadar (reverse segs-l)))))
                              (if (>= *mess* 5) (print (format nil "a ~A b ~A c ~A s ~A d ~A e ~A groups ~A s-group ~A last-durations ~A" a b c s d e groups (cadar (reverse segs-l)) (mapcar #'duration (cadar (reverse segs-l))))))
                              (let* ((stak (copy-seq (cadar (reverse segs-l))))
                                     (groups2
@@ -550,111 +539,111 @@
                                             (cond ((floatp top) (float x))
                                                   (t x))))
                                       groups)))
-                               (prpseg ll 
+                               (process-durations ll 
                                        (append (butlast segs-l) 
                                                (list (list (+ (duration (car (reverse segs-l))) diff)
                                                            (car groups2))))
                                        (append (list (list (* -1 diff) (cadr groups2)))
                                              segs-r)))))
-                          (t (prpseg ll
+                          (t (process-durations ll
                                      (append (butlast segs-l)
                                              (list (+ (car (reverse segs-l)) diff)))
                                      (append (list (* -1 diff))
                                              segs-r)))))
                         (t
                          (let ((r (append (list segs-l)
-                                          (prpseg (cdr ll)
+                                          (process-durations (cdr ll)
                                                   nil
                                                   segs-r))))
                            r)))))))
-       (prpseg->rtrelems (prps)
+       (process-durations->timees (prps)
          (mapcar ; ((1 2) (1 1))
           #'(lambda (m)
               (mapcar
                #'(lambda (n)
-                   (make-rtrelem :value n :flag t))
+                   (make-timee :value n :flag t))
                m))
           prps))
-       (process-rtrelem-flags (re)
+       (process-timee-flags (re)
          (let ((init-s (funcall-rec #'abs segs)) ; 
                (init-p (flat re)))
            (labels ((prcs (s p &optional (cont nil))
                       (cond ((and (null s) (null p)) nil)
                             ((null p) nil)
                             ((null s) (mapcar #'(lambda (x) 
-                                                  (setf (rtrelem-flag x) nil))
+                                                  (setf (timee-flag x) nil))
                                               p))
                             (t (let ((diff (- (duration (car s))
-                                              (duration (rtrelem-value (car p))))))
+                                              (duration (timee-value (car p))))))
                                  (cond ((> diff 0)
                                         (progn 
-                                          (setf (rtrelem-flag (car p)) (not cont))
+                                          (setf (timee-flag (car p)) (not cont))
                                           (prcs (append (list diff) (cdr s))
                                                 (cdr p)
                                                 t)))
                                        ((< diff 0)
                                         (progn 
-                                          (setf (rtrelem-flag (car p)) (not cont))
+                                          (setf (timee-flag (car p)) (not cont))
                                           (prcs (cdr s)
                                                 (cdr p))))
                                        (t
                                         (progn 
-                                          (setf (rtrelem-flag (car p)) (not cont))
+                                          (setf (timee-flag (car p)) (not cont))
                                           (prcs (cdr s) (cdr p))))))))))
              (prcs init-s init-p))))
-       (setf-rtrelem-value (x d)
-         (cond ((listp (rtrelem-value x))
-                (setf (car (rtrelem-value x)) d))
+       (setf-timee-value (x d)
+         (cond ((listp (timee-value x))
+                (setf (car (timee-value x)) d))
                (t 
-                (setf (rtrelem-value x) d))))
-       (expand-rtrelem-groups (re)
+                (setf (timee-value x) d))))
+       (expand-timee-groups (re)
          (mapcar #'(lambda (xs)
-                     (let ((x-values (scale-to-int (mapcar #'group-value (mapcar #'rtrelem-value xs)))))
-                       (if (>= *mess* 20) (print (format nil "expand-rtrelem-groups x-values ~A xs ~A"
+                     (let ((x-values (scale-to-int (mapcar #'group-value (mapcar #'timee-value xs)))))
+                       (if (>= *mess* 20) (print (format nil "expand-timee-groups x-values ~A xs ~A"
                                                          x-values
-                                                         (mapcar #'rtrelem-value xs))))
+                                                         (mapcar #'timee-value xs))))
                        (mapcar (lambda (a b)
                                  (progn 
-                                   (setf-rtrelem-value a b)
+                                   (setf-timee-value a b)
                                    a))
                                xs
                                x-values)))
                  re))
-       (convert-rtr-elem-values (re) 
+       (convert-timee-values (re) 
          (mapcar #'(lambda (x)
-                     (setf-rtrelem-value x (if (rtrelem-flag x)
-                                               (floor (group-value (rtrelem-value x)))
-                                             (float (group-value (rtrelem-value x))))))
+                     (setf-timee-value x (if (timee-flag x)
+                                               (floor (group-value (timee-value x)))
+                                             (float (group-value (timee-value x))))))
                  (flat re)))
-       (process-rtr-signs (re segs)
+       (process-timee-signs (re segs)
          (let ((stak (copy-seq segs)))
            (push nil stak)
-           (if (>= *mess* 15) (print (format nil "process-rtr-signs stak: ~A" stak)))
+           (if (>= *mess* 15) (print (format nil "process-timee-signs stak: ~A" stak)))
            (mapcar (lambda (x)
-                     (if (rtrelem-flag x) (pop stak))
+                     (if (timee-flag x) (pop stak))
                      (cond ((null stak) x)
                            ((and (< (group-value (car stak)) 0)
-                                 (> (rtrelem-value x) 0))
+                                 (> (timee-value x) 0))
                             (if (>= *mess* 15) (print (format nil "converting 1- value ~A" (car stak))))
-                            (setf (rtrelem-value x) (* -1 (rtrelem-value x)))
+                            (setf (timee-value x) (* -1 (timee-value x)))
                                   
                             x)
                            (t x)))
                    (flat re)))))
-    (let* ((prps (strip-zeros (prpseg l nil segs)))
-           (prpelems (prpseg->rtrelems prps)))
-      (process-rtrelem-flags prpelems)
-      (expand-rtrelem-groups prpelems)
-      (process-rtr-signs prpelems segs)
-      (convert-rtr-elem-values prpelems)
-      (funcall-rec #'rtrelem-value prpelems))))
+    (let* ((durations (strip-zeros (process-durations l nil segs)))
+           (duration-obj-list (process-durations->timees durations)))
+      (process-timee-flags duration-obj-list)
+      (expand-timee-groups duration-obj-list)
+      (process-timee-signs duration-obj-list segs)
+      (convert-timee-values duration-obj-list)
+      (funcall-rec #'timee-value duration-obj-list))))
 
-(define-box prcs-timepoint-groups ((ms ((5 8) (6 8) (7 8) (4 8))) (timepoints (1 2 3 4 5 6 7 8 9 10)) (modulus 16) (ratio '(3 2)) &key proportional-mode)
+(define-box process-duration-groups ((ms ((5 8) (6 8) (7 8) (4 8))) (timepoints (1 2 3 4 5 6 7 8 9 10)) (modulus 16) (ratio '(3 2)) &key proportional-mode)
   :indoc '("" "" "" "") ; an string list with short docs
   :icon 225  ; the icon
   :doc "" 
   (if (>= *mess* 10) (print (format nil
-                                    "prcs-timepoint-groups ms ~A ts ~A modulus ~A ratio ~A" 
+                                    "process-duration-groups ms ~A ts ~A modulus ~A ratio ~A" 
                                     ms
                                     timepoints
                                     modulus
@@ -673,13 +662,13 @@
                                    (list (* (car xs) tscale) (cadr xs)))
                                   (t (* xs tscale))))
                         timepoints)))
-    (if (>= *mess* 5) (print (format nil "prcs-timepoint-groups beat-partitions: ~A timex: ~A" beat-partitions timex)))
-    (prp-seg (flat beat-partitions) timex)))
+    (if (>= *mess* 5) (print (format nil "process-duration-groups beat-partitions: ~A timex: ~A" beat-partitions timex)))
+    (process-duration-groups-internal (flat beat-partitions) timex)))
    
 
 
-(define-box prcs-ms-timepoints ((ms ((5 8) (6 8) (7 8) (4 8))) 
-                                (prps (1 2 3 4 5 6 7 8 9 10))
+(define-box process-measure-durations ((ms ((5 8) (6 8) (7 8) (4 8))) 
+                                (durations (1 2 3 4 5 6 7 8 9 10))
                                 &key enp
                                      list-mode
                                      proportional-mode)
@@ -687,16 +676,16 @@
   :icon 225  ; the icon
   :doc ""         
   (if (>= *mess* 10) (print (format nil
-                                    "prcs-ms-timepoints ms ~A ts ~A " 
+                                    "process-measure-durations ms ~A ts ~A " 
                                     ms
-                                    prps)))
+                                    durations)))
   (let* ((ms-max-denom (apply #'max (mapcar #'cadr ms)))
          (partns (if proportional-mode (mapcar #'list (mapcar #'car ms)) (partn-list '(2 3) (mapcar #'car ms))))
-         (beats (if (> (treelen partns) (length prps))
-                    (append prps (make-sequence 'list
-                                                (- (treelen partns) (length prps)) 
+         (beats (if (> (treelen partns) (length durations))
+                    (append durations (make-sequence 'list
+                                                (- (treelen partns) (length durations)) 
                                                 :initial-element (list -1)))
-                  prps))
+                  durations))
          (partns-mrg (merge-ms-partns partns beats))
          (enp-midics (if (listp enp) (funcall-rec #'(lambda (x) (cond ((null x) -1) (t x))) (copy-seq enp))))
          (last-enp-midics nil))
@@ -753,7 +742,7 @@
                               (list (prcs-ms-timepoint-sigs ms partns-mrg)))))))
         (values tree partns-mrg partns beats)))))
 
-(cl:defun adjust-timelist (list total)
+(cl:defun adjust-durations (list total)
   (labels
       ((duration (x) 
          (cond
@@ -796,36 +785,35 @@
                     (list (adjusted-duration last (- (duration last) (- duration total)))))))
          (t seq))))))
 
-(define-box scale-seqc-timepoints ((timelist ((1 2 3 4 5 6 7)))
-                                   (ms ((5 4) (3 4) (3 4) (4 4)))
-                                   (mandr (8 (1 1)))
-                                   &key enp
-                                        list-mode
-                                        print-warnings
-                                        proportional-mode)
-  :indoc '("timepoint series / voice" "ms" "enp voice list flag" )
+(define-box scale-ms-events ((durations ((1 2 3 4 5 6 7)))
+                             (ms ((5 4) (3 4) (3 4) (4 4)))
+                             (modulus (8 (1 1)))
+                             &key enp
+                             list-mode
+                             print-warnings
+                             proportional-mode)
   :icon 225
   :doc "returns (openmusic or enp format) tree, beats, beat sizes, pulses in eac beat"
-  (if (>= *mess* 5) (print (format nil "scale-seqc-timepoints modulus/ratio ~A m ~A r ~A" mandr (car mandr) (cadr mandr))))
+  (if (>= *mess* 5) (print (format nil "scale-seqc-timepoints modulus/ratio ~A m ~A r ~A" modulus (car modulus) (cadr modulus))))
   (let ((tree-list nil)
         (partns-mrg-list nil)
         (partns-list nil)
         (beats-list nil)
         (voice-enp (cond
-                    ((null enp) (make-sequence 'list (length timelist)))
+                    ((null enp) (make-sequence 'list (length durations)))
                     ((and (listp enp) (every #'listp enp)) enp)
-                    (t (make-sequence 'list (length timelist) :initial-element enp))))
-        (msbeats (ms-beat-count ms mandr)))
-    (let ((tps (mapcar #'(lambda (x) (adjust-timelist x msbeats)) timelist)))
+                    (t (make-sequence 'list (length durations) :initial-element enp))))
+        (msbeats (ms-beat-count ms modulus)))
+    (let ((tps (mapcar #'(lambda (x) (adjust-durations x msbeats)) durations)))
       (dotimes (i (length tps))
         (let ((x (elt tps i)))
           (multiple-value-bind 
               (tree partns-mrg partns beats)
-              (prcs-ms-timepoints ms                                   
-                                  (prcs-timepoint-groups ms
+              (process-measure-durations ms                                   
+                                  (process-duration-groups ms
                                                          x
-                                                         (car mandr)
-                                                         (cadr mandr)
+                                                         (car modulus)
+                                                         (cadr modulus)
                                                          :proportional-mode proportional-mode)
                                   :enp (elt voice-enp i)
                                   :list-mode list-mode

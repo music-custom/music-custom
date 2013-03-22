@@ -43,93 +43,13 @@
 ;--------------------------------------------------
 
 (om::fill-library 
- '(("general" 
-    Nil 
-    Nil
-    (cartx
-     contains1
-     copy-assoc
-     fill-list
-     filter-by-min-absdiff
-     find-countof
-     find-nearest-n
-     find-nearest-n
-     find-sumof
-     format-mssign
-     ftor
-     histogram-stdv-seqc-processing
-     index-of
-     invert-directn
-     listdx
-     list-min-idx
-     list-structure-eq
-     nsucc
-     om-atoms2list
-     om-class-of
-     om-list-eq
-     om-one-simple-path
-     partn-list
-     prcs-ms-timepoints
-     prcs-timepoint-groups
-     push1
-     random-list-e
-     remove1
-     remove-all
-     remove nil
-     retain-all
-     sort-ratio-list
-     test-merge-ms-partns
-     tlength
-     to-fractn
-     to-ms-numr
-     to-ms-numr
-     to-ms-numr-list
-     to-ms-numr-list
-     to-om-ms-den-list
-     tree-count
-     tree-sum)
-    Nil)
-
-   ("t2l-screamer" 
+ '(("music-conversion" 
     Nil
     Nil
-    (list-template->vars
-     om-allperms
-     om-all-solutions
-     om-assert!
-     om-best-solution
-     om-ithperm
-     om-ith-solution
-     om-oneperm
-     om-one-simple-path
-     om-one-solution)
-    Nil)
-
-   ("t2l-screamer-export" 
-    Nil
-    Nil
-    (list-nsucc/=v
-     list-nsucc<=v
-     list-nsucc<>=v
-     list-nsucc<>v
-     list-nsucc<v
-     list-nsucc=v
-     list-nsucc>=v
-     list-nsucc>v
-     list-nsucc-span-betweenv
-     om-all-memberv)
-    Nil)
-   
-   ("music-conversion" 
-    Nil
-    Nil
-    (concat-rec 
-     get-signaturesv
-     join-seqc-list
-     join-seqc-ms
-     ms-vars->elems
+    (ms-vars->elems
      ms-vars->ratios
      pcset-filter
+     scale-ms-events
      seqc->ms-vars
      seqc->poly
      seqc->voices
@@ -140,8 +60,7 @@
    ("music-conversion-rule" 
     Nil
     Nil
-    (jjf-1st-species1
-     list-nsucc<>v
+    (list-nsucc<>v
      listdx-similarity-var
      modal-xposn-containing
      pcset=v
@@ -160,13 +79,7 @@
      seqc-ms-ratios>v
      seqc-ms-signatures-mapv
      seqc-xl-ival-members-var
-     seqc-xl-pcsets=v
-     seqcx-ival-abovev
-     seqcx-ival-belowv
-     seqcx-ival-betweenv
-     seqcx-ival-countv
-     unify-modes-with-seqc-listv
-     unify-modes-with-seqc-xpos-list) 
+     seqc-xl-pcsets=v) 
     Nil)
 
    ))
