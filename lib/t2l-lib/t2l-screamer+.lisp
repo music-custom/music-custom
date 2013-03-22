@@ -81,7 +81,7 @@
 ;;; the lists x and y have the same members
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun set-equalv (x y)
+#|(defun set-equalv (x y)
   (let ((z (a-booleanv))
 	noticer)
     
@@ -104,7 +104,34 @@
 			     #'strcmp)))))))
       (screamer::attach-noticer! noticer x)
       (screamer::attach-noticer! noticer y))
-    z))
+    z))|#
+
+(cl:defun screamer< (x y)
+  (labels
+      ((hash (arg1) (cond ((null arg1) 0)
+                          (t (sxhash (cond ((screamer::variable? arg1) 
+                                            (screamer::variable-name arg1))
+                                           (t arg1)))))))
+    (cond ((and (null x) (null y)) nil)
+          ((null x) t)
+          ((null y) nil)
+          (t (< (hash x) (hash y))))))
+         
+         
+
+(defun set-equalv (x y)
+  (let ((z (a-booleanv)))
+    (let ((noticer #'(lambda ()
+                       (when (and (ground? x) (ground? y))
+                         (screamer::assert!-equalv z
+                                          (equalv (sort (value-of (members-ofv (apply-substitution x)))
+                                                        #'screamer<)
+                                                  (sort (value-of (members-ofv (apply-substitution y)))
+                                                        #'screamer<))))))))
+      (screamer::attach-noticer! noticer x)
+      (screamer::attach-noticer! noticer y)
+      z))
+
 
 ;;; This version of funcallv uses ground? to test the boundness of its arguments
 ;;; instead of bound?
