@@ -12,8 +12,28 @@
   (screamer:define-screamer-package :t2l 
                                     (:use :ompw :system)
                                     (:export "MAPPRULES")))
+(setf system:*sg-default-size* 261120)
+
+(in-package :om-lisp)
+(defun init-om-eval-process ()
+  (unless (and *om-eval-process*
+               (mp:process-alive-p *om-eval-process*))
+    (setq *om-eval-process*
+          (mp:process-run-function *eval-process-name* '(:size 261120) 'om-work-function))))
 
 (in-package :t2l)
+(defun refresh-om-eval-process ()
+  (if (and om-lisp::*om-eval-process* 
+           (mp:process-alive-p om-lisp::*om-eval-process*))
+    (progn
+      (mp:process-kill om-lisp::*om-eval-process*)
+      (setf om-lisp::*om-eval-process* nil)))
+  (setq om-lisp::*om-eval-process*
+          (mp:process-run-function om-lisp::*eval-process-name* '(:size 261120) 'om-lisp::om-work-function)))
+(refresh-om-eval-process)
+  
+
+
 (print om:*current-lib*)
 (defvar *t2l-lib-files* nil)
 (setf *t2l-lib-files* (list ;(om::om-relative-path '(".") "screamer+")
@@ -78,7 +98,8 @@
      seqc-ms-ratios>=v
      seqc-ms-ratios>v
      seqc-ms-signatures-mapv
-     seqc-xl-ival-members-var
+     seqc-xl-ival-member-var
+     seqc-xl-ival-not-member-var
      seqc-xl-pcsets=v) 
     Nil)
 

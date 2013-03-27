@@ -239,10 +239,10 @@
                                    (t x)))
                            (ordered-partitions-of (list card)
                              (let ((ps (all-values (n-partitions-of2 card list))))
-                               (if (>= *mess* 20) (print (format nil "~A ordered-partitions-of list: (~A) card: ~A" (length ps) (length list) card)))
+                               (if (>= *mess* 40) (print (format nil "~A ordered-partitions-of list: (~A) card: ~A" (length ps) (length list) card)))
                                ps))
                            (maprule (xs r)
-                             (if (>= *mess* 20) (print (format nil "maprule xs: (~A) r: ~A" (length xs) r)))
+                             (if (>= *mess* 40) (print (format nil "maprule xs: (~A) r: ~A" (length xs) r)))
                              (cond
                               ((null xs) nil)
                               ((listp r)

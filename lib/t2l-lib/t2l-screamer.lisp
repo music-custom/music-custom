@@ -1741,7 +1741,11 @@
                           (b (- (length x) (if (cdr is) (apply #'+ (cdr is)) 0))))
                       (subseq x a b)))
                 (reverse s)))))))
-  
+
+(defun xs+=n (n xs)
+  (cond ((<= n 0) nil)
+        (t (let ((x (a-member-of xs)))
+             (append x (xs+=n (- n x) xs))))))
 
 (defun a-partition-having (x &optional partition-fn element-fn)
   (let ((a (a-partition-of x)))
