@@ -566,25 +566,46 @@
                                                          (+ n (abs d))
                                                          1))))
                   (nsucc list (append (mapcar #'1+ (butlast is)) (last is)) :step -1)))))
-    ps))
-;    (let ((chunks (remove-duplicates (flat1 ps) :test #'list-eq)))
-;      (let ((chunk-assoc (mapcar #'(lambda (c) (cons c (orv (apply #'<v c) (apply #'>v c)))) chunks)))
-;        (reduce-chunks
-;         #'orv
-;         (loop for i from 0 while (< i (length ps))
-;               collect (progn
-;                         (if (>= *mess* 20) (print (format nil 
-;                                                           "list-partitions<>v-internal: ~A / ~A: (~A)" 
-;                                                           (1+ i)
-;                                                           (length ps)
-;                                                           (if (>= *mess* 30) (mapcar #'length (elt ps i)) (length (elt ps i))))))
-;                         (apply #'andv (mapcar #'(lambda (y) (cdr-assoc y chunk-assoc)) (elt ps i))))))))))
+    (let ((chunks (remove-duplicates (flat1 ps) :test #'list-eq)))
+      (let ((chunk-assoc (mapcar #'(lambda (c) (cons c (orv (apply #'<v c) (apply #'>v c)))) chunks)))
+        (reduce-chunks
+         #'orv
+         (loop for i from 0 while (< i (length ps))
+               collect (progn
+                         (if (>= *mess* 20) (print (format nil 
+                                                           "list-partitions<>v-internal: ~A / ~A: (~A)" 
+                                                           (1+ i)
+                                                           (length ps)
+                                                           (if (>= *mess* 30) (mapcar #'length (elt ps i)) (length (elt ps i))))))
+                         (apply #'andv (mapcar #'(lambda (y) (cdr-assoc y chunk-assoc)) (elt ps i))))))))))
 
 (define-box list-partitions<>v (list n &optional d)
   :icon 324
-  (list-partitions<>v-internal list n (if d d 1)))
+  (list-partitions<>v-internal list n (or d 1)))
   
 (defun %12 (x) (mod x 12))
 (defun mod12 (x) (mod x 12))
 (defun %12v (x) (modv x 12))
 (defun mod12v (x) (modv x 12))   
+
+(define-box dovetail-seqc-list-var (seqc-list)
+  :icon 324
+  (assert (apply #'= (mapcar #'length seqc-list)))
+  (reduce-chunks
+   #'andv
+   (mapcar
+    #'(lambda (ps)
+        (cond ((= (length ps) 1) t)
+              (t
+               (apply
+                #'andv
+                (mapcar #'(lambda (x y) (=v x y))
+                        (car ps)
+                        (cadr ps))))))
+    (nsucc (cdr (butlast (flat1 (mapcar #'(lambda (xs)
+                                            (let ((x (mat-trans (flatten-seqc xs))))
+                                              (list (car x) (car (reverse x)))))
+                                        seqc-list))))
+           2
+           :step 2))))
+  
