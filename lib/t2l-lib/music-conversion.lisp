@@ -591,21 +591,25 @@
 (define-box dovetail-seqc-list-var (seqc-list)
   :icon 324
   (assert (apply #'= (mapcar #'length seqc-list)))
-  (reduce-chunks
-   #'andv
-   (mapcar
-    #'(lambda (ps)
-        (cond ((= (length ps) 1) t)
-              (t
-               (apply
-                #'andv
-                (mapcar #'(lambda (x y) (=v x y))
-                        (car ps)
-                        (cadr ps))))))
-    (nsucc (cdr (butlast (flat1 (mapcar #'(lambda (xs)
-                                            (let ((x (mat-trans (flatten-seqc xs))))
-                                              (list (car x) (car (reverse x)))))
-                                        seqc-list))))
-           2
-           :step 2))))
-  
+  (let ((ps (nsucc (cdr (butlast (flat1 (mapcar #'(lambda (xs)
+                                                    (let ((x (mat-trans (flatten-seqc xs))))
+                                                      (list (car x) (car (reverse x)))))
+                                                seqc-list))))
+                   2
+                   :step 2)))
+    (cond
+     ((null ps) t)
+     (t
+      (reduce-chunks
+       #'andv
+       (mapcar
+        #'(lambda (ps)
+            (cond ((= (length ps) 1) t)
+                  (t
+                   (apply
+                    #'andv
+                    (mapcar #'(lambda (x y) (=v x y))
+                            (car ps)
+                            (cadr ps))))))
+        ps))))))
+       
