@@ -66,7 +66,8 @@
  '(("music-conversion" 
     Nil
     Nil
-    (ms-vars->elems
+    (concat-list
+     ms-vars->elems
      ms-vars->ratios
      pcset-filter
      scale-ms-events

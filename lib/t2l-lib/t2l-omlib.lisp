@@ -34,16 +34,14 @@
   (make-instance 'om::poly 
                  :voices (seqc->voices seqc rhythm-trees :bpm bpm)))
 
+(define-box concat-list ((obj-list list))
+  :icon 230
+  (reduce #'om:concat obj-list))
+
 (define-box concat-rec ((obj-list list))
-  :initvals '(nil )    ; an initial values list
-  :indoc '("" ) ; an string list with short docs
-  :icon 230 ; the icon
-  :doc ""
-  (cond ((null obj-list) nil)
-        ((atom obj-list) obj-list)
-        ((> (length obj-list) 2) (om::concat (car obj-list) (concat-rec (cdr obj-list))))
-        ((= (length obj-list) 2) (om::concat (car obj-list) (cadr obj-list)))
-        (t (car obj-list))))
+  :icon 230
+  (concat-list obj-list))
+
 
 (cl:defun adjust-timelist (list total)
   (labels
