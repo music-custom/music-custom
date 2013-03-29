@@ -382,6 +382,8 @@
               (t process-chunk-size)))
   (setf process-chunk-size
         (cond ((null process-chunk-size) nil)
+              ((and process-chunk-size 
+                    (< (if (numberp input) input (length input)) process-chunk-size)) nil)               
               ((numberp process-chunk-size) process-chunk-size)
               (t *mapprules-default-input-process-increment*)))
   (labels

@@ -1827,3 +1827,18 @@ is replaced with replacement."
 
 (cl:defun kbj ()
   (kill-background-jobs))
+
+(defvar *count*)
+(cl:defun recurse-to-overflow ()
+  (setq *count* 0)
+  (let ((count 0))
+    (labels ((recurse ()(incf count)(recurse)nil))
+      (handler-case (recurse)
+        (serious-condition ()))
+      (setq *count* count))))
+
+(cl:defun print-process-plist ()
+  (mp:process-plist (mp:get-current-process)))
+
+(cl:defun try-to-refresh-process-stacksize ()
+  (setf (mp:process-private-property :size (mp:get-current-process)) 261120))

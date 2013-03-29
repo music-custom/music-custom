@@ -43,7 +43,6 @@
                 ordering-force-function)
                (t
                 (let ((ordering-force-function-string (string-downcase (format nil "~s" ordering-force-function))))
-                  (if (>= *mess* 5) (print (format nil "om-solution (~A)" (length (screamer::variables-in x)))))                                                   
                   (cond
                    ((search "reorder" ordering-force-function-string)
                     (if (>= *mess* 5) (print (format nil " reorder")))

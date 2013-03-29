@@ -1,12 +1,5 @@
-; 
-; (in-package :cl-user)
-; (CLRHASH SCREAMER::*FUNCTION-RECORD-TABLE*)
-; (pushnew :screamer-clos *features* :test #'eq)
-; (delete-package :screamer-user)
-; (delete-package :screamer)
-; (load (om::om-relative-path '("screamer324") "screamer") :verbose t :print t)
 (in-package :cl-user)
-; (load (concatenate 'string (namestring (get-working-directory)) "ompw/load.lisp"))
+(print (format nil "t2l-lib load file t2l-lib.lisp process-name: ~A" (mp:process-name (mp:get-current-process))))
 (unless (find-package :t2l)
   (setf system:*stack-overflow-behaviour* :warn)
   (screamer:define-screamer-package :t2l 
