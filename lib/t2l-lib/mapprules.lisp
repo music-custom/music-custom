@@ -333,8 +333,11 @@
                                             (push (list (cons r xs) var) or-sym-xs-assoc)
                                             var)))))))
                               (t nil))))
-                        (values (andv (all-memberv vars terminals)
-                                      (maprule vars (name dmg))) 
+                        (values (cond (symbol-mode 
+                                       (andv (all-memberv vars terminals)
+                                             (maprule vars (name dmg))))
+                                      (t
+                                       (maprule vars (name dmg))))
                                 vars                                                                                 
                                 dmg)))))))))))))
 
