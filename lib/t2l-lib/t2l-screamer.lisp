@@ -19,7 +19,7 @@
    ((null sequence) nil)
    ((cdr sequence)
     (dolist (var (butlast sequence)) (assert! var))
-    (car (last sequence)))
+    (car (reverse sequence)))
    (t (car sequence))))
 
 (defmacro om-one-solution-lf (form)
@@ -52,6 +52,7 @@
                 ordering-force-function)
                (t
                 (let ((ordering-force-function-string (string-downcase (format nil "~s" ordering-force-function))))
+                  ;(if (>= *mess* 10) (print (format nil "om-solution ordering-force-function-string: ~A" ordering-force-function-string)))
                   (cond
                    ((search "reorder" ordering-force-function-string)
                     (if (>= *mess* 5) (print (format nil " reorder")))
