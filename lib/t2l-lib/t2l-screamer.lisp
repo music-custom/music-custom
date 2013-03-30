@@ -13,6 +13,15 @@
 (defmacro om-assert! (&rest sequence)
   `(progn ,@(mapcar #'(lambda (x) `(assert! ,x)) (butlast sequence)) ,(car (reverse sequence))))
 
+(define-box assert!-sequence (&rest sequence)
+  :icon 161
+  (cond
+   ((null sequence) nil)
+   ((cdr sequence)
+    (dolist (var (butlast sequence)) (assert! var))
+    (car (last sequence)))
+   (t (car sequence))))
+
 (defmacro om-one-solution-lf (form)
   `(one-value (solution ,form (static-ordering #'print-linear-force))))
 
