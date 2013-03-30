@@ -1809,36 +1809,4 @@ is replaced with replacement."
                            :if-does-not-exist :create)
         (format str (write-to-string input)))
       filename)))
-(cl:defun kill-background-jobs ()
-  (let ((pname (mp:process-name (mp:get-current-process))))
-   (loop for p in (mp:list-all-processes)
-         when (and (not (string= (mp:process-name p)
-                                 pname))
-                   (or 
-                    (not
-                     (null
-                      (search "Background"
-                              (mp:process-name p))))
-                    (not
-                     (null
-                      (search "OM EVAL PROCESS" 
-                              (mp:process-name p))))))
-         do (mp:process-kill p))))
 
-(cl:defun kbj ()
-  (kill-background-jobs))
-
-(defvar *count*)
-(cl:defun recurse-to-overflow ()
-  (setq *count* 0)
-  (let ((count 0))
-    (labels ((recurse ()(incf count)(recurse)nil))
-      (handler-case (recurse)
-        (serious-condition ()))
-      (setq *count* count))))
-
-(cl:defun print-process-plist ()
-  (mp:process-plist (mp:get-current-process)))
-
-(cl:defun try-to-refresh-process-stacksize ()
-  (setf (mp:process-private-property :size (mp:get-current-process)) 261120))

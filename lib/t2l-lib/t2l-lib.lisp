@@ -1,19 +1,14 @@
-(in-package :cl-user)
-(print (format nil "t2l-lib load file t2l-lib.lisp process-name: ~A" (mp:process-name (mp:get-current-process))))
-(unless (find-package :t2l)
-  (setf system:*stack-overflow-behaviour* :warn)
-  (screamer:define-screamer-package :t2l 
-                                    (:use :ompw :system)
-                                    (:export "MAPPRULES")))
-(setf system:*sg-default-size* 261120)
-
 (in-package :om-lisp)
 (defun init-om-eval-process ()
   (unless (and *om-eval-process*
                (mp:process-alive-p *om-eval-process*))
     (setq *om-eval-process*
           (mp:process-run-function *eval-process-name* '(:size 261120) 'om-work-function))))
-
+(unless (find-package :t2l)
+  (setf system:*stack-overflow-behaviour* :error)
+  (screamer:define-screamer-package :t2l 
+                                    (:use :ompw :system)
+                                    (:export "MAPPRULES")))
 (in-package :t2l)
 (defun refresh-om-eval-process ()
   (if (and om-lisp::*om-eval-process* 
@@ -25,9 +20,6 @@
           (mp:process-run-function om-lisp::*eval-process-name* '(:size 261120) 'om-lisp::om-work-function)))
 (refresh-om-eval-process)
   
-
-
-(print om:*current-lib*)
 (defvar *t2l-lib-files* nil)
 (setf *t2l-lib-files* (list ;(om::om-relative-path '(".") "screamer+")
                             (om::om-relative-path '(".") "general")
@@ -98,3 +90,34 @@
     Nil)
 
    ))
+
+(cl:defun kill-background-jobs ()
+  (let ((pname (mp:process-name (mp:get-current-process))))
+   (loop for p in (mp:list-all-processes)
+         when (and (not (string= (mp:process-name p)
+                                 pname))
+                   (or 
+                    (not
+                     (null
+                      (search "Background"
+                              (mp:process-name p))))
+                    (not
+                     (null
+                      (search "OM EVAL PROCESS" 
+                              (mp:process-name p))))))
+         do (mp:process-kill p))))
+
+(cl:defun kbj ()
+  (kill-background-jobs))
+
+(defvar *count*)
+(cl:defun recurse-to-overflow ()
+  (setq *count* 0)
+  (let ((count 0))
+    (labels ((recurse ()(incf count)(recurse)nil))
+      (handler-case (recurse)
+        (serious-condition ()))
+      (setq *count* count))))
+
+(cl:defun print-process-plist ()
+  (mp:process-plist (mp:get-current-process)))

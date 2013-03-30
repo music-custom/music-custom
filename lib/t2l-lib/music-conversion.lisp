@@ -561,18 +561,19 @@
 
 (cl:defun list-partitions<>v-internal (list n d)
   (let ((ps (n-values 
-                2000 
+                4096 
               (let ((is (xs+=n (length list) (arithm-ser (max (- n (abs d)) 1) 
                                                          (+ n (abs d))
                                                          1))))
                   (nsucc list (append (mapcar #'1+ (butlast is)) (last is)) :step -1)))))
     (let ((chunks (remove-duplicates (flat1 ps) :test #'list-eq)))
       (let ((chunk-assoc (mapcar #'(lambda (c) (cons c (orv (apply #'<v c) (apply #'>v c)))) chunks)))
+        (if (>= *mess* 5) (print (format nil "list-partitions<>v-internal: ~A" (length chunk-assoc))))
         (reduce-chunks
          #'orv
          (loop for i from 0 while (< i (length ps))
                collect (progn
-                         (if (>= *mess* 20) (print (format nil 
+                         (if (>= *mess* 5) (print (format nil 
                                                            "list-partitions<>v-internal: ~A / ~A: (~A)" 
                                                            (1+ i)
                                                            (length ps)
@@ -581,7 +582,7 @@
 
 (define-box list-partitions<>v (list n &optional d)
   :icon 324
-  (list-partitions<>v-internal list n (or d 1)))
+  (list-partitions<>v-internal list n (or d 2)))
   
 (defun %12 (x) (mod x 12))
 (defun mod12 (x) (mod x 12))
