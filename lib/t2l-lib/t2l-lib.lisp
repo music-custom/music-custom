@@ -121,3 +121,5 @@
 
 (cl:defun print-process-plist ()
   (mp:process-plist (mp:get-current-process)))
+
+(setf t2l::*mess* 5)
