@@ -10,10 +10,10 @@
               expression)))
 
             
-(defmacro om-assert! (&rest sequence)
-  `(progn ,@(mapcar #'(lambda (x) `(assert! ,x)) (butlast sequence)) ,(car (reverse sequence))))
-
-(define-box assert!-sequence (&rest sequence)
+;(defmacro om-assert! (&rest sequence)
+;  `(progn ,@(mapcar #'(lambda (x) `(assert! ,x)) (butlast sequence)) ,(car (reverse sequence))))
+(define-box assert!-sequence (&rest sequence) (apply #'om-assert! sequence))
+(define-box om-assert! (&rest sequence)
   :icon 161
   (cond
    ((null sequence) nil)
