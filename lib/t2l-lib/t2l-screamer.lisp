@@ -18,7 +18,7 @@
   (cond
    ((null sequence) nil)
    ((cdr sequence)
-    (dolist (var (butlast sequence)) (assert! var))
+    (dolist (var (reverse (cdr (reverse sequence)))) (assert! var))
     (car (reverse sequence)))
    (t (car sequence))))
 
