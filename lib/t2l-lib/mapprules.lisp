@@ -232,16 +232,14 @@
                                 (mapcar #'car rule-card-assoc))))
                     (let ((first-var (car vars))
                           (last-var (last-atom vars))
-                          (temporary-sym-assoc nil))
+                          (temporary-sym-assoc (make-hash-table :test #'equalp)))
                       (labels
                           ((csp-variable-name (x) 
                              (cond ((null x) nil)
                                    ((screamer::variable? x) (screamer::variable-name x))
                                    (t x)))
                            (ordered-partitions-of (list card)
-                             (let ((ps (all-values (n-partitions-of2 card list))))
-                               (if (>= *mess* 40) (print (format nil "~A ordered-partitions-of list: (~A) card: ~A" (length ps) (length list) card)))
-                               ps))
+                             (all-values (n-partitions-of2 card list)))
                            (maprule (xs r)
                              (cond
                               ((null xs) nil)
@@ -263,12 +261,12 @@
                                              (cdr-assoc r1 dmg-sym-assoc))))
                                        r)))
                                  xs)))
-                              ((assoc (cons xs r) temporary-sym-assoc :test #'list-eq)
+                              ((gethash (cons xs r) temporary-sym-assoc)
                                (if (>= *mess* 30) (print (format nil "mapprules maprule existing variable found for sym: ~A for ~A vars (~A ...)" r (length xs) (car xs))))
-                               (cdr-assoc (cons xs r) temporary-sym-assoc :test #'list-eq))
+                               (gethash (cons xs r) temporary-sym-assoc))
                               ((and (terminal-sym? r) (cdr xs)) nil)
                               ((terminal-sym? r)
-                               (setf (cdr-assoc (cons xs r) temporary-sym-assoc :test #'list-eq)
+                               (setf (gethash (cons xs r) temporary-sym-assoc)
                                      (cond
                                       ((or symbol-mode
                                            (not (numberp r)))
@@ -277,7 +275,7 @@
                                        (=v (car xs) r)))))
                               ((and-sym? r) 
                                (print (format nil " WARNING obsolete AND routine triggered by symbol: ~A" r))
-                               (setf (cdr-assoc (cons xs r) temporary-sym-assoc :test #'list-eq)
+                               (setf (gethash (cons xs r) temporary-sym-assoc)
                                      (let* ((xs-length (length xs))
                                             (rcard (cond
                                                     ((and continuation-mode
@@ -314,7 +312,7 @@
                                                  (car vs))))))))))
                               ((or-sym? r)
                                (if (position nil (cdr-assoc r or-and-sym-assoc)) (error (format nil "or-sym r: ~A ~A" r  (cdr-assoc r or-and-sym-assoc))))
-                               (setf (cdr-assoc (cons xs r) temporary-sym-assoc :test #'list-eq)
+                               (setf (gethash (cons xs r) temporary-sym-assoc)
                                      (cond 
                                       ((cdr xs)
                                        (apply
@@ -324,12 +322,6 @@
                                          (cdr-assoc r or-and-sym-assoc))))
                                       ((cdr-assoc r or-sym-domain-assoc) 
                                        (reduce-chunks #'orv (mapcar #'(lambda (r1) (maprule xs r1)) (cdr-assoc r or-sym-domain-assoc))))
-                                       ;(reduce 
-                                       ; #'orv
-                                       ; (mapcar
-                                       ;  #'(lambda (term) (maprule xs term))
-                                       ;  (cdr-assoc r or-sym-domain-assoc)))))))
-                                       ; (memberv (car xs) (cdr-assoc r or-sym-domain-assoc)))
                                       (t (error "bad call to OR clause with r: ~A xs; ~A" r xs)))))
                               (t nil))))
                         (values (cond (symbol-mode 
