@@ -9,18 +9,12 @@
    (ith-value (a-random-member-of (arithm-ser 0 n 1))
               expression)))
 
+(define-box om-assert!2 (&rest sequence)
+  :icon 324
+  t)
             
-;(defmacro om-assert! (&rest sequence)
-;  `(progn ,@(mapcar #'(lambda (x) `(assert! ,x)) (butlast sequence)) ,(car (reverse sequence))))
-(define-box assert!-sequence (&rest sequence) (apply #'om-assert! sequence))
-(define-box om-assert! (&rest sequence)
-  :icon 161
-  (cond
-   ((null sequence) nil)
-   ((cdr sequence)
-    (dolist (var (reverse (cdr (reverse sequence)))) (assert! var))
-    (car (reverse sequence)))
-   (t (car sequence))))
+(defmacro om-assert! (&rest sequence)
+  `(progn ,@(mapcar #'(lambda (x) `(assert! ,x)) (butlast sequence)) ,(car (reverse sequence))))
 
 (defmacro om-one-solution-lf (form)
   `(one-value (solution ,form (static-ordering #'print-linear-force))))
@@ -28,7 +22,6 @@
 (defun xorv (&rest xs)
   (andv (notv (apply #'andv xs))
         (apply #'orv xs)))
-
 (defun nonev (&rest xs)
   (=v 0 (applyv #'count-trues xs)))
 
@@ -42,70 +35,74 @@
          (t
           (funcall-nondeterministic fn)))))
 
-(defun om-solution (x &optional ordering-force-function)
-  (solution x (cond 
-               ((null ordering-force-function)
-                (if (>= *mess* 5) (print (format nil "om-solution (~A): static-ordering linear-force" (length (screamer::variables-in x)))))
-                (static-ordering #'linear-force))
-               ((or (functionp ordering-force-function) (nondeterministic-function? ordering-force-function))
-                (if (>= *mess* 5) (print (format nil "om-solution (~A): ~A ordering-force-function" (length (screamer::variables-in x)) ordering-force-function)))
-                ordering-force-function)
-               (t
-                (let ((ordering-force-function-string (string-downcase (format nil "~s" ordering-force-function))))
-                  ;(if (>= *mess* 10) (print (format nil "om-solution ordering-force-function-string: ~A" ordering-force-function-string)))
-                  (cond
-                   ((search "reorder" ordering-force-function-string)
-                    (if (>= *mess* 5) (print (format nil " reorder")))
-                    (reorder (cond ((or (search "rangesize" ordering-force-function-string)
-                                        (search "range-size" ordering-force-function-string))
-                                    (if (>= *mess* 5) (print (format nil " range-size")))
-                                    #'range-size)
-                                   (t 
-                                    (if (>= *mess* 5) (print (format nil " domain-size")))
-                                    #'domain-size))
-                             #'(lambda (x) (declare (ignore x)) nil)
-                             (cond ((search ">" ordering-force-function-string) 
-                                    (if (>= *mess* 5) (print (format nil " >")))
-                                    #'>)
-                                   (t 
-                                    (if (>= *mess* 5) (print (format nil " <")))
-                                    #'<))
-                             (cond ((or (search "print-dacf" ordering-force-function-string)
-                                        (search "print-divide-and-conquer-force" ordering-force-function-string))
-                                    (if (>= *mess* 5) (print (format nil " print-divide-and-conquer-force")))
-                                    #'print-divide-and-conquer-force)
-                                   ((or (search "print-lf" ordering-force-function-string)
-                                        (search "print-linear-force" ordering-force-function-string))
-                                    (if (>= *mess* 5) (print (format nil " print-linear-force")))
-                                    #'print-linear-force)
-                                   ((or (search "dacf" ordering-force-function-string)
-                                        (search "divide-and-conquer-force" ordering-force-function-string))
-                                    (if (>= *mess* 5) (print (format nil " divide-and-conquer-force")))
-                                    #'divide-and-conquer-force)
-                                   (t 
-                                    (if (>= *mess* 5) (print (format nil " linear-force")))
-                                    #'linear-force))))
-                   ((or (string= ordering-force-function-string "print-dacf")
-                        (string= ordering-force-function-string "print-sodacf")
-                        (string= ordering-force-function-string "print-divide-and-conquer-force")
-                        (string= ordering-force-function-string "print-static-ordering-divide-and-conquer-force"))
-                    (if (>= *mess* 5) (print (format nil "om-solution (~A): static-ordering print-divide-and-conquer-force" (length (screamer::variables-in x)))))
-                    (static-ordering #'print-divide-and-conquer-force))
-                   ((or (string= ordering-force-function-string "print-lf")
-                        (string= ordering-force-function-string "print-solf")
-                        (string= ordering-force-function-string "print-linear-force")
-                        (string= ordering-force-function-string "print-static-ordering-linear-force"))
-                    (if (>= *mess* 5) (print (format nil "om-solution (~A): static-ordering print-linear-force" (length (screamer::variables-in x)))))
-                    (static-ordering #'print-linear-force))
-                   ((or (string= ordering-force-function-string "dacf")
-                        (string= ordering-force-function-string "sodacf")
-                        (string= ordering-force-function-string "divide-and-conquer-force")
-                        (string= ordering-force-function-string "static-ordering-divide-and-conquer-force"))
-                    (if (>= *mess* 5) (print (format nil "om-solution (~A): static-ordering divide-and-conquer-force" (length (screamer::variables-in x)))))
-                    (static-ordering #'divide-and-conquer-force))
-                   (t
-                    (if (>= *mess* 5) (print (format nil "om-solution (~A): static-ordering linear-force" (length (screamer::variables-in x)))))
-                    (static-ordering #'linear-force))))))))
+(defun om-solution (x &optional force-function)
+  (solution x (cond ((null force-function)
+                     (static-ordering #'linear-force))
+                    ((string= (write-to-string force-function) "plf")
+                     (static-ordering #'print-linear-force))
+                    ((string= (write-to-string force-function) "pdacf")
+                     (static-ordering #'print-divide-and-conquer-force))
+                    ((or (functionp force-function)
+                         (screamer::nondeterministic-function? force-function))
+                     (if (>= *mess* 10) 
+                         (lprint 'om-solution "static-ordering force-function: user fn " force-function))
+                     (static-ordering force-function))
+                    ((string= (write-to-string force-function) "linear-force fn")
+                     (if (>= *mess* 10) 
+                         (lprint 'om-solution "static-ordering force-function: linear-force fn"))
+                     (static-ordering #'linear-force))
+                    ((string= (write-to-string force-function) "lf")
+                     (if (>= *mess* 10) 
+                         (lprint 'om-solution "static-ordering force-function: linear-force fn"))
+                     (static-ordering #'linear-force))
+                    ((string= (write-to-string force-function) "divide-and-conquer-force fn")
+                     (if (>= *mess* 10) 
+                         (lprint 'om-solution "static-ordering force-function: divide-and-conquer-force fn"))
+                     (static-ordering #'divide-and-conquer-force))
+                    ((string= (write-to-string force-function) "dacf")
+                     (if (>= *mess* 10) 
+                         (lprint 'om-solution "static-ordering force-function: divide-and-conquer-force fn"))
+                     (static-ordering #'divide-and-conquer-force))
+                    ((or (string= (write-to-string force-function) "reorder-domain-size-linear-force")
+                         (string= (write-to-string force-function) "rodslf")
+                         (string= (write-to-string force-function) "reorder"))
+                     (if (>= *mess* 10) 
+                         (lprint 'om-solution "reordering force-function: linear-force fn"))
+                     (reorder #'domain-size
+                              #'(lambda (x) (declare (ignore x)) nil)
+                              #'<
+                              #'linear-force))
+                    ((or (string= (write-to-string force-function) "reorder-domain-size-divide-and-conquer-force")
+                         (string= (write-to-string force-function) "rodsdacf")
+                         (string= (write-to-string force-function) "reorder-dacf"))
+                     (if (>= *mess* 10) 
+                         (lprint 'om-solution "reordering force-function: divide-and-conquer-force fn"))
+                     (reorder #'domain-size
+                              #'(lambda (x) (declare (ignore x)) nil)
+                              #'<
+                              #'divide-and-conquer-force))
+                    ((or (string= (write-to-string force-function) "print-reorder-domain-size-linear-force")
+                         (string= (write-to-string force-function) "prodslf")
+                         (string= (write-to-string force-function) "print-reorder-lf"))
+                     (if (>= *mess* 10) 
+                         (lprint 'om-solution "reordering force-function: linear-force fn"))
+                     (reorder #'domain-size
+                              #'(lambda (x) (declare (ignore x)) nil)
+                              #'<
+                              #'print-linear-force))
+                    ((or (string= (write-to-string force-function) "print-reorder-domain-size-divide-and-conquer-force")
+                         (string= (write-to-string force-function) "prodsdacf")
+                         (string= (write-to-string force-function) "print-reorder-dacf"))
+                     (if (>= *mess* 10) 
+                         (lprint 'om-solution "reordering force-function: divide-and-conquer-force fn"))
+                     (reorder #'domain-size
+                              #'(lambda (x) (declare (ignore x)) nil)
+                              #'<
+                              #'print-divide-and-conquer-force))
+                    (t
+                     (if (>= *mess* 10) 
+                         (lprint 'om-solution "static-ordering force-function: linear-force fn"))
+                     (static-ordering #'linear-force)))))
 
 (defun all-solutions (x &optional force-function)
   (all-values (om-solution x force-function)))
@@ -192,20 +189,11 @@
 (define-box all-orv (x)
   :icon 324
   (reduce-chunks #'orv (flat x)))
-
 (define-box all-memberv (e sequence)
   :icon 324
-  (cond
-   ((null e) (memberv e sequence))
-   ((consp e) (reduce-chunks #'andv (flat (funcall-rec #'(lambda (x) (memberv x sequence)) e))))
-   (t (memberv e sequence))))
-
-(define-box all-not-memberv (e sequence)
-  :icon 324  
-  (cond
-   ((null e) (notv (memberv e sequence)))
-   ((consp e) (reduce-chunks #'andv (flat (funcall-rec #'(lambda (x) (notv (memberv x sequence))) e))))
-   (t (notv (memberv e sequence)))))
+  (let ((sequence-flat (flat sequence)))
+    (cond ((listp e) (reduce-chunks #'andv (mapcar #'(lambda (x) (memberv x sequence-flat)) (flat e))))
+          (t (memberv e sequence-flat)))))
 
 (defun a-random-member-of (list)
   (a-member-of (permut-random list)))
@@ -1753,12 +1741,7 @@
                           (b (- (length x) (if (cdr is) (apply #'+ (cdr is)) 0))))
                       (subseq x a b)))
                 (reverse s)))))))
-
-(defun xs+=n (n xs)
-  (cond ((= n 0) nil)
-        ((< n 0) (fail))
-        (t (let ((x (a-member-of xs)))
-             (append (list x) (xs+=n (- n x) xs))))))
+  
 
 (defun a-partition-having (x &optional partition-fn element-fn)
   (let ((a (a-partition-of x)))
