@@ -700,7 +700,7 @@
   (cond ((null list) nil)
         ((and (listp list)
               (every #'listp list))
-         (apply #'append list))
+         (reduce-chunks #'append list))
         ((listp list)
          (flat1 (mapcar #'(lambda (x) (cond ((listp x) x)
                                             (t (list x))))
@@ -793,21 +793,46 @@ is replaced with replacement."
                (push (elt list i) c)))
     (reverse c)))
 
-(cl:defun nsucc (input n &key step list-padding pad-character)
+(cl:defun nsucc (list n &key step list-padding pad-character)
   (cond
-   ((null step) (nsucc input n :step (1- n) :list-padding list-padding :pad-character pad-character))
-   (t
-    (let* ((list (if list-padding 
-                     (append input
-                             (make-sequence 'list (* -1 (- (length input) 
-                                                           (* n (ceiling (/ (length input) n))))) :initial-element pad-character))
-                   input))
-           (length (length list)))
+   ((listp n)
+    (cond
+     ((null step)
+      (nsucc list n :step -1 :list-padding list-padding :pad-character pad-character))
+     ((< (length list) (+ (apply #'+ n) (* (length n) step)))
+      (nsucc (append list
+                     (make-sequence 'list
+                                    (- (+ (apply #'+ n) (* (length n) step)) (length list))
+                                    :initial-element pad-character))
+             n
+             :step step
+             :list-padding list-padding
+             :pad-character pad-character))
+             
+     (t
       (loop for i from 0
-            for j = (* i step)
-            for k = (+ j n)
-            while (< j (length list))
-            collect (subseq list j (if (<= k length) k length)))))))
+            while (< i (length n))
+            for j = (cond ((= i 0) 0)
+                          (t (+ (apply #'+ (subseq n 0 i)) (* step i))))
+            for k = (+ j (elt n i))
+            collect (subseq list j k)))))
+   ((null step) 
+    (nsucc list n :step (1- n) :list-padding list-padding :pad-character pad-character))
+   ((< (length list) (* n (floor (/ (length list) n))))
+    (nsucc (append list
+                   (make-sequence 'list 
+                                  (- (* n (floor (/ (length list) n))) (length list))
+                                  :initial-element pad-character))
+           n
+           :step step
+           :list-padding list-padding
+           :pad-character pad-character))
+   (t
+    (loop for i from 0
+          for j = (* i step)
+          for k = (if (<= (+ j n) (length list)) (+ j n) (length list))
+          while (< j (length list))
+          collect (subseq list j k)))))
 
 
 (cl:defun copy-all (tree)
@@ -1784,21 +1809,4 @@ is replaced with replacement."
                            :if-does-not-exist :create)
         (format str (write-to-string input)))
       filename)))
-(cl:defun kill-background-jobs ()
-  (let ((pname (mp:process-name (mp:get-current-process))))
-   (loop for p in (mp:list-all-processes)
-         when (and (not (string= (mp:process-name p)
-                                 pname))
-                   (or 
-                    (not
-                     (null
-                      (search "Background"
-                              (mp:process-name p))))
-                    (not
-                     (null
-                      (search "OM EVAL PROCESS" 
-                              (mp:process-name p))))))
-         do (mp:process-kill p))))
 
-(cl:defun kbj ()
-  (kill-background-jobs))

@@ -268,7 +268,23 @@
                   keys))))))
         seqc-xl)))))
 
+(define-box seqc-xl-ival-member-var (list &key (ivalset (3 4 5 7 8 9)) debug)
+  :icon 324
+  (let ((pairs (remove-duplicates  
+                (flat1
+                 (mapcar 
+                  #'(lambda (xs) (nPr xs 2))
+                  (mat-trans (flatten-seqc (remove nil list)))))
+                :test #'set-equal)))
+    (let ((ivs (mapcar #'(lambda (xs) (modv (-v (cadr xs) (car xs)) 12))
+                       pairs)))
+      (all-memberv ivs ivalset))))
+
 (define-box seqc-xl-ival-members-var (list &key (ivalset (3 4 5 7 8 9)) debug)
+  :icon 324
+  (seqc-xl-ival-member-var list :ivalset ivalset :debug debug))
+
+(define-box seqc-xl-ival-not-member-var (list &key (ivalset (1)))
   :indoc '("" "")
   :icon 324
   :doc ""
@@ -278,9 +294,13 @@
                   #'(lambda (xs) (nPr xs 2))
                   (mat-trans (flatten-seqc (remove nil list)))))
                 :test #'set-equal)))
-    (let ((ivs (mapcar #'(lambda (xs) (modv (absv (-v (cadr xs) (car xs))) 12))
+    (let ((ivs (mapcar #'(lambda (xs) (modv (-v (cadr xs) (car xs)) 12))
                        pairs)))
-      (all-memberv ivs ivalset))))
+      (reduce-chunks #'andv (mapcar #'(lambda (x) (notv (memberv x ivalset))) ivs)))))
+
+(define-box seqc-xl-ival-not-members-var (list &key (ivalset (3 4 5 7 8 9)) debug)
+  :icon 324
+  (seqc-xl-ival-not-member-var list :ivalset ivalset :debug debug))
 
 (defun seqc-ms-ratios-funcallv (fn seqc)
   (apply #'andv (mapcar fn (mapcar #'flat (seqc-ms->ratios (remove nil seqc))))))
@@ -537,11 +557,60 @@
     ;(mapcar #'(lambda (x) (assert! (memberv x '(3 4 5 7 8 9)))) ivals)
     (assert! (=v (car (reverse ivals)) 12))
     (assert! (memberv (-v (car (reverse v)) (cadr (reverse v))) '(2 1 -1 -2)))
-    seqc)) 
+    seqc))
 
+(cl:defun list-partitions<>v-internal (list n d)
+  (let ((ps (n-values 
+                4096 
+              (let ((is (xs+=n (length list) (arithm-ser (max (- n (abs d)) 1) 
+                                                         (+ n (abs d))
+                                                         1))))
+                  (nsucc list (append (mapcar #'1+ (butlast is)) (last is)) :step -1)))))
+    (let ((chunks (remove-duplicates (flat1 ps) :test #'list-eq)))
+      (let ((chunk-assoc (mapcar #'(lambda (c) (cons c (orv (apply #'<v c) (apply #'>v c)))) chunks)))
+        (if (>= *mess* 5) (print (format nil "list-partitions<>v-internal: ~A" (length chunk-assoc))))
+        (reduce-chunks
+         #'orv
+         (loop for i from 0 while (< i (length ps))
+               collect (progn
+                         (if (>= *mess* 5) (print (format nil 
+                                                           "list-partitions<>v-internal: ~A / ~A: (~A)" 
+                                                           (1+ i)
+                                                           (length ps)
+                                                           (if (>= *mess* 30) (mapcar #'length (elt ps i)) (length (elt ps i))))))
+                         (apply #'andv (mapcar #'(lambda (y) (cdr-assoc y chunk-assoc)) (elt ps i))))))))))
 
-
+(define-box list-partitions<>v (list n &optional d)
+  :icon 324
+  (list-partitions<>v-internal list n (or d 2)))
+  
 (defun %12 (x) (mod x 12))
 (defun mod12 (x) (mod x 12))
 (defun %12v (x) (modv x 12))
 (defun mod12v (x) (modv x 12))   
+
+(define-box dovetail-seqc-list-var (seqc-list)
+  :icon 324
+  (assert (apply #'= (mapcar #'length seqc-list)))
+  (let ((ps (nsucc (cdr (butlast (flat1 (mapcar #'(lambda (xs)
+                                                    (let ((x (mat-trans (flatten-seqc xs))))
+                                                      (list (car x) (car (reverse x)))))
+                                                seqc-list))))
+                   2
+                   :step 2)))
+    (cond
+     ((null ps) t)
+     (t
+      (reduce-chunks
+       #'andv
+       (mapcar
+        #'(lambda (ps)
+            (cond ((= (length ps) 1) t)
+                  (t
+                   (apply
+                    #'andv
+                    (mapcar #'(lambda (x y) (=v x y))
+                            (car ps)
+                            (cadr ps))))))
+        ps))))))
+       
