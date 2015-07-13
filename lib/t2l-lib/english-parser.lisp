@@ -1,4 +1,0 @@
-(defpackage "ENGLISH-PARSER")
-(in-package "ENGLISH-PARSER")  
-(use-package '(parsergen))   ;;; Define the parser itself.   
-(defparser english-parser     ((bs s) $1)    ((s np vp)       `(,$1 ,$2))     ((bnp :adj bnp)         `(,$1 ,$2))     ((bnp bnp relp)       `(,$1 ,$2))    ((bnp :noun) $1)     ((relp :rel vp)       `(,$1 ,$2))     ((vp :verb np locp)      `(,$1 ,$2 ,$3))     ((vp :verb locp)      `(,$1 ,$2))     ((vp :verb np)     `(,$1 ,$2))    ((vp :verb)      $1)     ((np :art bnp locp)     `(,$1 ,$2 ,$3))    ((np :art bnp)     `(,$1 ,$2))     ((np bnp) $1)    ((locp :loc np)     `(,$1 ,$2)))

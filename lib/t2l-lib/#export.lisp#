@@ -46,8 +46,6 @@
              (ita-mashup-internal (ita-line-up titles next-title)
                                   (remove-if #'(lambda (x) (equalp x next-title)) list)))
            titles))))
-                 
-      
 
 (defun best-ita-mashup (list)
   (setf list (remove-if #'null list))

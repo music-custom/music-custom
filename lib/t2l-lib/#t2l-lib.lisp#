@@ -21,6 +21,7 @@
 			    (om::om-relative-path '(".") "midic")
 			    (om::om-relative-path '(".") "music-conversion")
 			    (om::om-relative-path '(".") "export")
+                            (om::om-relative-path '(".") "cmu-soundex")
                             ))
 
 (mapc #'om::compile&load *t2l-lib-files*)

@@ -1,9 +1,9 @@
-
+; 
 ; Graph representation of context-free grammars
 ; Alex Shkotin arXiv:cs/0703015 http://arxiv.org/abs/cs/0703015
 ; 
 ; jan 2013 
-;                                                         ocannon@gmail.com
+; 
 (cl:defun mapprules-internal (list 
                               prules
                               &key continuation-mode

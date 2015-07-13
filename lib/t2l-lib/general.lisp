@@ -1757,15 +1757,25 @@ is replaced with replacement."
       (let ((string (loop for line = (read-line in nil)
                           while line collect line)))
         (close in)
-        (print string)
-        (let ((out (apply
-                    #'concatenate
-                    (append (list 'string)
-                            (mapcar #'(lambda (s)
-                                        (format nil (concatenate 'string s "~%")))
-                                    (butlast string))
-                            (last string)))))
-          out)))))
+        string))))
+
+  
+(cl:defun space-split (string)
+  (loop for start = 0 then (1+ finish)
+        for finish = (position #\Space string :start start)
+        collecting (subseq string start finish)
+        until (null finish)))
+ 
+(cl:defun write-with-periods (strings)
+  (format t "~{~A~^.~}" strings))
+;(let ((out (reduce
+;                    #'concatenate
+;                    (append (list 'string)
+;                            (mapcar #'(lambda (s)
+;                                        (format nil (concatenate 'string s "~%")))
+;                                    (butlast string))
+;                            (last string)))))
+;          out)))))
 
 (define-box write-textfile (input label ext &optional timezone)
   :indoc '("input" "label" "ext" "timezone")
