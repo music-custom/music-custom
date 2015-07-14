@@ -46,12 +46,10 @@
              (ita-mashup-internal (ita-line-up titles next-title)
                                   (remove-if #'(lambda (x) (equalp x next-title)) list)))
            titles))))
-                 
-      
 
 (defun best-ita-mashup (list)
   (setf list (remove-if #'null list))
-  (let ((score (an-integer-abovev 0)))
+  (let ((score (an-integerv 0)))
     (best-value (solution (let ((title (ita-mashup list)))
                             (assert! (=v score (length title)))
                             (print title))
