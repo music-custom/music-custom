@@ -60,7 +60,6 @@
   9767 9769 9781 9787 9791 9803 9811 9817 9829 9833 9839 9851 9857 9859 9871 9883 9887 9901 9907 9923 9929 9931
   9941 9949 9967 9973))
 
-
 (cl:defun funcall-rec (fn tree &key level-min level-max cons-mode)
   "recursively applies fn to atoms in tree"
   (cond
@@ -1093,13 +1092,15 @@ is replaced with replacement."
          (eq a1 a2))
         (t nil)))
 
-(cl:defun list-eq (l1 l2 &key (test #'atom-eq))
-   (cond ((and (null l1) (null l2)) t)
-         ((or (null l1) (null l2)) nil)
-         ((and (listp l1) (listp l2)) 
-          (and (list-eq (car l1) (car l2)) (list-eq (cdr l1) (cdr l2))))
-         ((or (listp l1) (listp l2)) nil)
-         (t (funcall test l1 l2))))
+; (cl:defun list-eq (l1 l2 &key (test #'atom-eq))
+;    (cond ((and (null l1) (null l2)) t)
+;          ((or (null l1) (null l2)) nil)
+;          ((and (listp l1) (listp l2)) 
+;           (and (list-eq (car l1) (car l2)) (list-eq (cdr l1) (cdr l2))))
+;          ((or (listp l1) (listp l2)) nil)
+;          (t (funcall test l1 l2))))
+
+(cl:defun list-eq (l1 l2 &key test) (equalp l1 l2))
 
 ;(define-box list-structure-eq ((l1 list) (l2 list))
 ;  :initvals '((0 2) (0 2))
