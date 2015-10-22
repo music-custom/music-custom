@@ -38,7 +38,10 @@
  '(("music-conversion" 
     Nil
     Nil
-    (ms-vars->elems
+    (om-all-solutions
+     om-ith-solution
+     om-one-solution     
+     ms-vars->elems
      ms-vars->ratios
      pcset-filter
      scale-ms-events

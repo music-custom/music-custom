@@ -1749,14 +1749,18 @@ is replaced with replacement."
 (defun set-difference-eq (x y) (and (not (or (null x) (null y))) (or (and (null x) (null y)) (null (set-difference x y)))))
 
 
-(define-box read-textfile (filename)
+(define-box read-textfile (filename &key read-as-uppercase)
   :indoc '("filename")
   :icon 908
   :doc ""
   (let ((in (open filename :if-does-not-exist nil)))
     (when in
       (let ((string (loop for line = (read-line in nil)
-                          while line collect line)))
+                          while line collect 
+                          (if (and line read-as-uppercase)
+            (string-upcase line)
+          line)
+)))
         (close in)
         string))))
 

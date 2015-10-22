@@ -1110,7 +1110,7 @@
   (flat 
    (loop for n from 0 
          while (< n 11)
-         collect (om+ s (* n 12)))))
+         collect (om+ (mapcar #'(lambda (x) (mod x 12)) s) (* n 12)))))
 
 (defun set->midic0127v (set)
   (flat
