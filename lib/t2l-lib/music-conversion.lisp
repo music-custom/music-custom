@@ -509,25 +509,25 @@
                              2)))))
 
 
-(define-box jjf-1st-species1 (cf &optional mode) 
+(define-box jjf-1st-species1 (cf &optional mode-pcset) 
   :icon 324
   (let* ((v (mapcar #'(lambda (x) (an-integer-betweenv 1 127)) cf))
          (seqc (list v cf))
          (ivals (mapcar #'(lambda (x) (-v (car x) (cadr x))) (mat-trans seqc)))
-         (hivls (remove nil (maplist #'(lambda (x) (if (cdr x) (-v (car x) (cadr x)) nil)) v)))
-         (mode0127 (if mode (set->midic0127 mode))))
-    (if mode0127
-        (progn 
-          (mapcar #'(lambda (x) (assert! (memberv x mode0127))) cf)          
-          (mapcar #'(lambda (x) (assert! (memberv x mode0127))) v)))
+         (hivls (remove nil (maplist #'(lambda (x) (if (cdr x) (-v (car x) (cadr x)) nil)) v))))
+         
+    (if (>= *mess* 0) 
+        (print (format nil "jjf-1st-species1 cf-midi: ~A mode-notes: ~A" cf mode-pcset)))
+    
+    (assert! (apply #'andv (mapcar #'(lambda (x) (memberv (modv x 12) mode-pcset)) cf)))
     (assert! (memberv (car v) (list (car cf)
                                     (+v (car cf) 7)
                                     (+v (car cf) 12))))
-    (mapcar #'(lambda (x) (assert! (memberv (absv x) '(1 2 3 4 5)))) hivls)
-    (mapcar #'(lambda (x) (assert! (>=v x 0))) (list (car ivals) (car (reverse ivals))))
-    (mapcar #'(lambda (x) (assert! (memberv x '(3 4 5 7 8 9 15)))) (subseq ivals 1 (1- (length ivals))))
-    (mapcar #'(lambda (x) (assert! (notv (=v (modv x 12) 0)))) (subseq ivals 1 (1- (length ivals))))
-    (mapcar #'(lambda (x) (assert! (<=v x 16))) ivals)
+    (assert! (apply #'andv (mapcar #'(lambda (x) (memberv (absv x) '(1 2 3 4 5))) hivls)))
+    (assert! (apply #'andv (mapcar #'(lambda (x) (>=v x 0)) (list (car ivals) (car (reverse ivals))))))
+    (assert! (apply #'andv (mapcar #'(lambda (x) (memberv x '(3 4 5 7 8 9 15))) (subseq ivals 1 (1- (length ivals))))))
+    (assert! (apply #'andv (mapcar #'(lambda (x) (notv (=v (modv x 12) 0))) (subseq ivals 1 (1- (length ivals))))))
+    (assert! (apply #'andv (mapcar #'(lambda (x) (<=v x 16)) ivals)))
     (maplist #'(lambda (x) (if (cdr x) (assert! (notv (=v (car x) (cadr x)))))) v)
     (maplist #'(lambda (x) 
                  (if (cdr x)

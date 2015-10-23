@@ -128,7 +128,10 @@
   :indoc '("" "" )
   :icon 150
   :doc ""
-  (ith-solution i x force-function fail-form))
+  (ith-solution (if i i 0) 
+                x 
+                force-function 
+                fail-form))
 
 (define-box om-best-solution (form1 objective-form &optional force-function form2)
   :initvals '(nil nil nil nil)
