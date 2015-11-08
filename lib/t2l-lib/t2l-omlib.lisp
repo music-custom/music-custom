@@ -27,12 +27,13 @@
             init-seqc
             init-rhythm-trees)))
 
-(define-box seqc->poly ((seqc ((60))) (rhythm-trees ((? (((4 4) (-1)))) -1)) &key bpm)
+(define-box seqc->poly ((seqc ((60))) (rhythm-trees ((? (((4 4) (-1)))) -1)) &key bpm reverse)
   :indoc '("seqc" "trees")
   :icon 225
   :doc ""
+  (let ((voice-list (seqc->voices seqc rhythm-trees :bpm bpm)))
   (make-instance 'om::poly 
-                 :voices (seqc->voices seqc rhythm-trees :bpm bpm)))
+                 :voices (if reverse (reverse voice-list) voice-list))))
 
 (define-box concat-rec ((obj-list list))
   :initvals '(nil )    ; an initial values list

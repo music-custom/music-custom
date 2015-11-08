@@ -62,14 +62,14 @@
 
 (cl:defun funcall-rec (fn tree &key level-min level-max cons-mode)
   "recursively applies fn to atoms in tree"
-  (cond
-   (cons-mode
-    (funcall-rec-internal2 fn tree 0 level-min level-max))
-   (t
-    (funcall-rec-internal fn tree 0 level-min level-max))))
+  (cond (cons-mode
+         (funcall-rec-internal2 fn tree 0 level-min level-max))
+        (t
+         (funcall-rec-internal fn tree 0 level-min level-max))))
 
 (cl:defun funcall-rec-internal (fn tree level level-min level-max)
   (cond ((null tree) nil)
+        ((not (consp tree)) (funcall fn tree)) ; 10/27
         ((consp (car tree))
          (cons (funcall-rec-internal fn (car tree) (1+ level) level-min level-max)
                (funcall-rec-internal fn (cdr tree) level level-min level-max)))
@@ -83,6 +83,7 @@
 
 (cl:defun funcall-rec-internal2 (fn tree level level-min level-max)
   (cond ((null tree) nil)
+        ((not (consp tree)) (funcall fn tree)) ; 10/27
         ((consp (car tree))
          (cons (if (and (or (null level-min)
                             (>= level level-min))
@@ -805,7 +806,7 @@ is replaced with replacement."
       (loop for i from 0
             for j = (* i step)
             for k = (+ j n)
-            while (< j (length list))
+            while (< j (- (length list) step))
             collect (subseq list j (if (<= k length) k length)))))))
 
 

@@ -1,4 +1,15 @@
 (in-package :t2l)
+
+(define-box om-solution (x force-function)
+  :icon 150
+  (let ((linear-force-fn (static-ordering #'linear-force)))
+    (let ((force-function (cond
+                           ((null force-function) linear-force-fn)
+                         ((functionp force-function) force-function)
+                         ((search force-function '(om::linear-force t2l::linear-force screamer::linear-force)) linear-force-fn)
+                         (t linear-force-fn))))
+      (solution x force-function))))
+
 (define-box one-partition-having ((x list) &optional partition-fn element-fn fail-form)
   :initvals '((1 2 3 4 5) nil nil 'fail)    ; an initial values list
   :indoc '("" "" "" "" ) ; an string list with short docs
@@ -172,3 +183,29 @@
      (prolog-nperms n input s)
      (solution s (static-ordering #'linear-force)))
    'fail))
+
+(define-box list-betweenv (list &key (min 0) (max 127)) 
+  :icon 324
+  :doc ""
+  (reduce #'andv (flat (funcall-rec #'(lambda (x)
+                                        (andv (if min (>=v x min) t)
+                                              (if max (<=v x max) t)))
+                                    list))))
+
+(define-box make-screamer-vars (list &key min max (integers-mode t) floats-mode) 
+  :icon 324
+  :doc ""
+  (labels ((make-screamer-var (x) 
+             (cond
+              ((null x) (make-variable))
+              (t ; numeric
+               (let ((var (cond ((or integers-mode (integerp x)) (an-integerv))
+                                (t (a-realv)))))
+                 (assert! (if (null min)
+                              t
+                            (>=v var min)))
+                 (assert! (if (null max)
+                              t
+                            (<=v var max)))
+                 var)))))
+    (funcall-rec #'make-screamer-var list)))

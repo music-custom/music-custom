@@ -541,7 +541,68 @@
 
 
 
+
+; music-conversion-rule boxes
 (defun %12 (x) (mod x 12))
 (defun mod12 (x) (mod x 12))
 (defun %12v (x) (modv x 12))
-(defun mod12v (x) (modv x 12))   
+(defun mod12v (x) (modv x 12))
+
+(define-box jjf-species1-motion (cf v &key mode-pcset )
+  :icon 324
+  (let* ((seqc (list cf v))
+         (ivals (mapcar #'(lambda (x) (-v (cadr x) (car x))) (mat-trans seqc)))
+         (hivls (remove nil (maplist #'(lambda (x) (if (cdr x) (-v (car x) (cadr x)) nil)) v))))
+    (andv (if mode-pcset
+              (apply #'andv (mapcar #'(lambda (x) (memberv (modv x 12) mode-pcset)) cf))
+            t)
+          ;(memberv (car v) (list (car cf)
+          ;                       (+v (car cf) 7)
+          ;                       (+v (car cf) 12)))
+          (orv (=v (car v) (car cf))
+               (=v (car v) (+v (car cf) 7))
+               (=v (car v) (+v (car cf) 12)))
+          (apply #'andv (mapcar #'(lambda (x) (memberv (absv x) '(1 2 3 4 5))) hivls))
+          (apply #'andv (mapcar #'(lambda (x) (>=v x 0)) (list (car ivals) (car (reverse ivals)))))
+          (apply #'andv (mapcar #'(lambda (x) (memberv x '(3 4 5 7 8 9 15))) (subseq ivals 1 (1- (length ivals)))))
+          (apply #'andv (mapcar #'(lambda (x) (notv (=v (modv x 12) 0))) (subseq ivals 1 (1- (length ivals)))))
+          (apply #'andv (mapcar #'(lambda (x) (<=v x 16)) ivals))
+          (apply #'andv (maplist #'(lambda (x) (if (cdr x) (notv (=v (car x) (cadr x))) t)) v))
+          (apply #'andv (maplist #'(lambda (x) 
+                                     (if (cdr x)
+                                         (progn 
+                                           (andv (notv (andv (=v 7 (modv (car x) 12)) (=v 7 (modv (cadr x) 12))))
+                                                 (notv (andv (=v 0 (modv (car x) 12)) (=v 0 (modv (cadr x) 12)))))) 
+                                       t)) 
+                                 ivals))
+          (memberv (car (reverse ivals)) '(-12 0 12))
+          (memberv (-v (car (reverse v)) (cadr (reverse v))) '(2 1 -1 -2))
+          (apply #'andv 
+                 (let* ((raised-seventh (modv (-v (car cf) 1) 12))
+                        (subtonic (modv (-v raised-seventh 1) 12)))
+                   (mapcar #'(lambda (x) (notv (andv (=v (car x) raised-seventh)
+                                                     (=v (cadr x) subtonic)))) 
+                           (nsucc (mapcar #'(lambda (x) (modv x 12)) v) 2 :step 1))))
+          
+          )))
+
+(define-box list-pcset-memberv (list mode-pcset)
+  :icon 324
+  :initvals '((60 62 64 65 67 69 72) (0 2 4 5 7 9 11))
+  (cond ((null list) t)
+        ((not (listp list)) (list-pcsets-memberv mode-pcset (list list)))
+        (t
+         (reduce #'andv (flat (funcall-rec #'(lambda (x) (memberv (modv x 12) mode-pcset)) list))))))
+
+(define-box seqc-parallel-5th-rule (seqc &key (pc-ivs '(0 7)))
+  :icon 324
+  (apply #'andv
+         (mapcar #'(lambda (interval-pair)
+                     (notv (andv (memberv (car interval-pair) pc-ivs)
+                                 (=v (car interval-pair) (cadr interval-pair)))))
+                 (nsucc
+                  (mapcar #'(lambda (pair) 
+                              (modv (absv (-v (cadr pair) (car pair))) 12))
+                          (mat-trans (flatten-seqc seqc)))
+                  2
+                  :step 1))))

@@ -99,7 +99,7 @@
 ;;; You may need to change this
 #+unix (defconstant *screamer+-path* "/home/akt/local/software/screamer+v1.0")
 
-;;; Home directory of SCREAMER+ on PC (assumes NOT unix =&gt; PC)
+;;; Home directory of SCREAMER+ on PC (assumes NOT unix => PC)
 ;;; You may need to change this
 #-unix (defconstant *screamer+-path* "C:/Allegro/Screamer+v1.0")
 
@@ -110,7 +110,7 @@
   )
  
 ;;; Stops LISP complaining that BOOLEAN is redefined by Screamer
-(setq excl:*enable-package-locked-errors* nil)
+; (setq excl:*enable-package-locked-errors* nil)
 
 ;;; Screamer+ requires screamer
 (unless (find-package :SCREAMER)
@@ -160,7 +160,7 @@
    :fail :when-failing :count-failures :boolean :booleanp
    :assert! :make-variable :count-trues :count-truesv
    :numberpv :realpv :integerpv :booleanpv :memberv
-   :=v :&lt;v :&lt;=v :&gt;v :&gt;=v :/=v :+v :-v :*v :/v :minv :maxv
+   :=v :<v :<=v :>v :>=v :/=v :+v :-v :*v :/v :minv :maxv
    :a-booleanv :an-integerv :an-integer-abovev :an-integer-belowv
    :an-integer-betweenv :a-realv :a-real-abovev :a-real-belowv
    :a-real-betweenv :a-numberv :a-member-ofv :notv :andv :orv
@@ -189,8 +189,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #+allegro
-(setq excl:*redefinition-warnings* 
-  (remove :operator excl:*redefinition-warnings*))
+;(setq excl:*redefinition-warnings* 
+ ; (remove :operator excl:*redefinition-warnings*))
 
 (eval-when (compile)
   (declaim (optimize (speed 3) (safety 1) (space 0) (debug 0)))
@@ -210,7 +210,7 @@
   )
 
 
-(defun variables-in (x &amp;aux slots)
+(defun variables-in (x &aux slots)
   (typecase x
    (cons
     (append (variables-in (value-of (car x))) (variables-in (cdr x))))
@@ -227,7 +227,7 @@
   )
 
 ;;; Deprecated version 
-;(defun variables-in (x &amp;aux slots)
+;(defun variables-in (x &aux slots)
 ;  (cond
 ;   ((consp x)
 ;    (append (variables-in (value-of (car x))) (variables-in (cdr x))))
@@ -298,7 +298,7 @@
 ;;; found by the search. If objects were explored by the search
 ;;; NEW instances of the same type are generated and returned.
 
-(defun apply-substitution (x &amp;aux retobj)
+(defun apply-substitution (x &aux retobj)
   (let ((val (value-of x)))
     ;; Changed from a cond to a typecase, 8/7/00
     (typecase val
@@ -393,7 +393,7 @@
 (defvar *enumeration-limit* 100)
 
 ;;; A shorthand
-(defmacro setq-domains (vars vals &amp;aux (res nil))
+(defmacro setq-domains (vars vals &aux (res nil))
   ;; Replaced append with an nconc 8/7/00
   (dolist (var vars) (setq res (nconc (list var vals) res)))
   (cons 'setq res))
@@ -410,7 +410,7 @@
   nonnumber-type
   )
 
-(defun make-variable (&amp;optional (name nil name?))
+(defun make-variable (&optional (name nil name?))
  (let ((variable
 	(make-variable+ :name (if name? name (incf screamer::*name*)))
 	))
@@ -465,11 +465,11 @@
 
     )
 
-(defmethod variable-type-known? ((x variable+))
+(defmethod variable-type-known? (x variable+)
   (not (null (variable+-nonnumber-type x)))
   )
 
-(defmethod variable-get-type ((x variable+))
+(defmethod variable-get-type (x variable+)
   (variable+-nonnumber-type x)
   )
 
@@ -479,23 +479,23 @@
 ;;; an error a warning is produced instead of diving straight into the
 ;;; LISP debugger.
 ;;;
-;;; eg.
-;;; &gt; (carefully (+ 1 2))
+;;; eg.\
+;;; > (carefully (+ 1 2))
 ;;; 3
-;;; &gt; (carefully (skjfksdj))
+;;; > (carefully (skjfksdj))
 ;;; Warning: (SKJFKSDJ ) failed
 ;;; NIL
-;;; &gt; (carefully (+ 'junk 1))
+;;; > (carefully (+ 'junk 1))
 ;;; Warning: (+ 'JUNK 1 ) failed
 ;;; NIL
-;;; &gt;
+;;; >
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro carefully (&amp;body forms)
+(defmacro carefully (&body forms)
   `(let (retval)
      
      (setq retval (carefully-evaluate ,(car forms)))
-     (if (&gt; ,(length forms) 1)
+     (if (> ,(length forms) 1)
 	 (carefully ,@(rest forms))
        retval)
      )
@@ -528,7 +528,7 @@
   (if (typep var 'standard-object) t nil)
   )
 
-;;; Checks to see if the enumerated domain slot is a non-empty list
+;;; Cheks to see if the enumerated domain slot is a non-empty list
 (defun enumerated-domain-p (var)
   (and (variable-enumerated-domain var)
        (listp (variable-enumerated-domain var))
@@ -549,16 +549,16 @@
 
 ;;; This was not included in the standard SCREAMER distribution
 ;;; The following generates the truth table for implication
-;;; &gt; (setq p (a-booleanv))
+;;; > (setq p (a-booleanv))
 ;;; [3558 Boolean]
-;;; &gt; (setq q (a-booleanv))
+;;; > (setq q (a-booleanv))
 ;;; [3559 Boolean]
-;;; &gt; (setq r (a-booleanv))
+;;; > (setq r (a-booleanv))
 ;;; [3560 Boolean]
-;;; &gt; (assert! (equalv r (impliesv p q)))
+;;; > (assert! (equalv r (impliesv p q)))
 ;;; NIL
-;;; &gt; (all-values (solution (list p '=&gt; q 'is r) (static-ordering #'linear-force)))
-;;; ((T =&gt; T IS T) (T =&gt; NIL IS NIL) (NIL =&gt; T IS T) (NIL =&gt; NIL IS T))
+;;; > (all-values (solution (list p '=> q 'is r) (static-ordering #'linear-force)))
+;;; ((T => T IS T) (T => NIL IS NIL) (NIL => T IS T) (NIL => NIL IS T))
 ;;;
 ;;; PROPAGATION PROPERTIES: as for other logical functions
 
@@ -574,7 +574,7 @@
 ;;; PROPAGATION PROPERTIES: as for equalv, except that no propagation occurs
 ;;; if the equality assertion fails.
 
-(defmacro make-equal (var value &amp;optional (retval '(fail)))
+(defmacro make-equal (var value &optional (retval '(fail)))
   `(if (possibly? (equalv ,var ,value))
        (progn
 	 (assert! (equalv ,var ,value))
@@ -591,7 +591,7 @@
   )
 
 
-(defmacro ifv (condition exp1 &amp;optional (exp2 nil))
+(defmacro ifv (condition exp1 &optional (exp2 nil))
   ;; If the condition is bound then there is no need to create additional
   ;; constraint variables
   `(let ((c ,condition))
@@ -624,7 +624,7 @@
   )
 
 #|
-(defun ifv-internal (condition e1 &amp;optional (e2 t))
+(defun ifv-internal (condition e1 &optional (e2 t))
   (let (
 	(con condition)
 	(z (make-variable))
@@ -646,14 +646,14 @@
 
 ;;; This version of ifv seems to work!
 ;;; More straightforward versions didn't work, but I don't know why
-(defmacro ifv (c x &amp;optional (y t y?))
+(defmacro ifv (c x &optional (y t y?))
   (if y?
       `(ifv-internal ,c (funcall #'quote-up (value-of ,x)) (funcall #'quote-up (value-of ,y)))
     `(ifv-internal ,c (funcall #'quote-up (value-of ,x)))
     )
   )
 
-(defun quote-up (f &amp;rest args)
+(defun quote-up (f &rest args)
   (cond
    ((= (length args) 0)
     `(quote ,f))
@@ -664,7 +664,7 @@
 
 
 
-(defmacro ifv (condition exp1 &amp;optional (exp2 t))
+(defmacro ifv (condition exp1 &optional (exp2 t))
   ;; If the condition is bound then there is no need to create additional
   ;; constraint variables
   `(let (
@@ -696,7 +696,7 @@
     )
   )
 
-(defmacro ifv (condition exp1 &amp;optional (exp2 t))
+(defmacro ifv (condition exp1 &optional (exp2 t))
   ;; If the condition is bound then there is no need to create additional
   ;; constraint variables
   `(let (
@@ -798,7 +798,7 @@
 		   (assert! (memberv z (mapcar #'(lambda(g) (cons (value-of x) g)) (variable-enumerated-domain y))))
 		 (when (and (enumerated-domain-p x) 
 			    ;; put a limit on the propagation
-			    (&lt; (* (domain-size x) (domain-size y)) 
+			    (< (* (domain-size x) (domain-size y)) 
 			       *enumeration-limit*)
 			    )
 		   (assert! (memberv z (funcross-product #'cons (variable-enumerated-domain x) (variable-enumerated-domain y))))
@@ -1076,7 +1076,7 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun make-listv (n &amp;key (initial-element '(make-variable)) &amp;aux (acc nil))
+(defun make-listv (n &key (initial-element '(make-variable)) &aux (acc nil))
   (if (bound? n)
       (progn
 	(dotimes (c (value-of n))
@@ -1124,12 +1124,12 @@
 ;;; a constraint variable if that is what is contained in the array.
 ;;;
 ;;; To assign a value to a cell in a constrained array, just use
-;;; (assert! (equalv (arefv &lt;array&gt; &lt;subscripts&gt;) &lt;value&gt;))
+;;; (assert! (equalv (arefv <array> <subscripts>) <value>))
 ;;;
 ;;; PROPAGATION PROPERTIES: As for applyv
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun arefv (array &amp;rest subscripts)
+(defun arefv (array &rest subscripts)
   (applyv #'aref array subscripts)
   )
 
@@ -1137,7 +1137,7 @@
 ;;; contents for an array of the given size, such that
 ;;; each cell is filled with an unbound constraint variable
 
-(defun generate-dimension (dims &amp;aux (acc nil))
+(defun generate-dimension (dims &aux (acc nil))
   (cond
    ((numberp dims) (dotimes (c dims) (push (make-variable) acc)) acc)
    ((zerop (car dims)) nil)
@@ -1171,7 +1171,7 @@
 ;;; not just until the list is bound as funcallv and applyv would.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun make-arrayv (dimensions &amp;key (element-type t))
+(defun make-arrayv (dimensions &key (element-type t))
   (let (z acc vald)
 
     (if (ground? dimensions)
@@ -1235,7 +1235,7 @@
 ;;;   for x and y are computed.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun appendv (x y &amp;rest r)
+(defun appendv (x y &rest r)
   (if (and (bound? x) (bound? y) (every #'bound? r))
       (apply #'append (cons (append (value-of x) (value-of y)) r))
     (let (
@@ -1261,7 +1261,7 @@
 		 ;; Both x and y have enumerated domains
 		 ((and (not (bound? x)) (enumerated-domain-p x)
 		       (not (bound? y)) (enumerated-domain-p y)
-		       (&lt; (* (domain-size x) (domain-size y)) *enumeration-limit*)
+		       (< (* (domain-size x) (domain-size y)) *enumeration-limit*)
 		       )
 		  (assert! (memberv z (funcross-product #'append 
 							(variable-enumerated-domain x) 
@@ -1305,7 +1305,7 @@
 	    ;; Both x and y have enumerated domains
 	    ((and (not (bound? x)) (enumerated-domain-p x)
 		  (not (bound? y)) (enumerated-domain-p y)
-		  (&lt; (* (domain-size x) (domain-size y)) *enumeration-limit*)
+		  (< (* (domain-size x) (domain-size y)) *enumeration-limit*)
 		  )
 	     (assert! (memberv z 
 			       (funcross-product #'append 
@@ -1341,7 +1341,7 @@
 	   
 	   (when (and (not (bound? x)) (not (bound? y)) (bound? z)
 		      (not r) ; there are only two arguments
-		      (&lt; (length (value-of z)) (1- *enumeration-limit*))
+		      (< (length (value-of z)) (1- *enumeration-limit*))
 		      )
 	     (do* (
 		   (val (value-of z))
@@ -1350,7 +1350,7 @@
 		   (backs nil)
 		   )
 		 
-		 ((&lt; n 0) 
+		 ((< n 0) 
 		  (assert! (memberv x fronts))
 		  (assert! (memberv y backs))
 		  )
@@ -1392,7 +1392,7 @@
 ;;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun mapcarv (f &amp;rest el)
+(defun mapcarv (f &rest el)
   (if (and (bound? f) (every #'bound? el))
       (apply #'mapcar (cons (value-of f) (mapcar #'value-of el)))
     (let (
@@ -1435,7 +1435,7 @@
 ;;;   with the case when the elements are unbound.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun maplistv (f &amp;rest el)
+(defun maplistv (f &rest el)
   (if (and (bound? f) (every #'bound? el))
       (apply #'maplist (cons (value-of f) (mapcar #'value-of el)))
     (let (
@@ -1484,7 +1484,7 @@
     (if (fboundp cfn-name)
 	(symbol-function cfn-name)
       (function
-       (lambda(&amp;rest args)
+       (lambda(&rest args)
 	 (value-of (applyv (value-of f) args))
 	 )
        )
@@ -1512,7 +1512,7 @@
 ;;;   domain, then those values are propagated to the enumerated domain of z
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun funcallinv (f inverse &amp;rest el)
+(defun funcallinv (f inverse &rest el)
   (if (and (bound? f) (every #'ground? el))
       (apply (value-of f) (mapcar #'apply-substitution el))
     (let (
@@ -1548,7 +1548,7 @@
 ;;; *** This is no different to list !! ***
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun listv (&amp;rest args)
+(defun listv (&rest args)
   (apply #'list args)
   )
 
@@ -1638,7 +1638,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Functions: a-listv, a-consv, a-symbolv, a-stringv
 ;;;
-;;; Some functions &amp; macros for generating variables of a specific type
+;;; Some functions & macros for generating variables of a specific type
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro a-listv () '(a-typed-varv 'list))
@@ -1685,7 +1685,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(defun formatv (&amp;rest args)
+(defun formatv (&rest args)
   (if (every #'ground? args)
       (apply #'format (mapcar #'(lambda(x)
 				  (if (stringp x)
@@ -1931,7 +1931,7 @@
 
 ;;; This version of at-mostv works but is suboptimal
 ;;;
-;;;(defun at-mostv (n f &amp;rest x)
+;;;(defun at-mostv (n f &rest x)
 ;;;  (let* (
 ;;;	 (z (a-booleanv))
 ;;;	 (vals (apply #'mapcarv (cons f x)))
@@ -1939,18 +1939,18 @@
 ;;;	  )
 ;;;
 ;;;    (setq truths (apply #'+v (mapcar #'reifyv vals)))
-;;;    (assert!-equalv z (&lt;=v truths n))
+;;;    (assert!-equalv z (<=v truths n))
 ;;;    z
 ;;;    )
 ;;;  )
 
 ;;; Changed to backquote syntax 1/8/99
-(defmacro at-mostv (n f &amp;rest x)
+(defmacro at-mostv (n f &rest x)
   `(at-mostv-internal ,n ,f ,@x)
    )
 
  
-(defun at-mostv-internal (n f &amp;rest x)
+(defun at-mostv-internal (n f &rest x)
   (declare (integer n))
    (let* (
 	  (z (a-booleanv))
@@ -1985,7 +1985,7 @@
  		  (if (equal (value-of temp) t)
  		      (progn
  			(local (setq countup (1+ countup)))
- 			(when (&gt; countup n)
+ 			(when (> countup n)
  			  (assert! (notv z))
  			  )
  			)
@@ -1994,7 +1994,7 @@
  		    )
  		  )
 
- 		(when (and (&lt;= (- shortest noes) n)
+ 		(when (and (<= (- shortest noes) n)
  			   (not (known?-true z))
  			   )
  		  (assert! z)
@@ -2059,7 +2059,7 @@
 
 ;;; This version of at-leastv works but is suboptimal 
 ;;; 
-;;;(defun at-leastv (n f &amp;rest x)
+;;;(defun at-leastv (n f &rest x)
 ;;;  (let* (
 ;;;	 (z (a-booleanv))
 ;;;	 (vals (apply #'mapcarv (cons f x)))
@@ -2067,20 +2067,20 @@
 ;;;	  )
 ;;;
 ;;;    (setq truths (apply #'+v (mapcar #'reifyv vals)))
-;;;    (assert!-equalv z (&gt;=v truths n))
+;;;    (assert!-equalv z (>=v truths n))
 ;;;    z
 ;;;    )
 ;;;  )
  
 ;;; Changed to backquote syntax 1/8/99
-(defmacro at-leastv (n f &amp;rest x)
+(defmacro at-leastv (n f &rest x)
    `(at-leastv-internal ,n ,f ,@x)
    )
 ;;; 
 ;;; 
 ;;; 
 
-(defun at-leastv-internal (n f &amp;rest x)
+(defun at-leastv-internal (n f &rest x)
   (declare (integer n) (function f))
 ;   (local
     (let* (
@@ -2116,16 +2116,16 @@
  		    (if (equal (value-of temp) t)
  			(progn
  			  (local (incf countup))
- 			  (when (&gt;= countup n)
+ 			  (when (>= countup n)
  			    (screamer::assert!-true z)
  			    )
  			  )
  		      (local (incf noes))
  		      )
  		    )
- 		;; If the number of unknowns plus the yesses is &lt; n
+ 		;; If the number of unknowns plus the yesses is < n
  		;; then at-leastv is not satisfiable
- 		(when (and (&lt; (- shortest noes) n)
+ 		(when (and (< (- shortest noes) n)
  			   (not (known?-false z))
  			   )
  		  (screamer::assert!-false z) ; (notv z))
@@ -2185,7 +2185,7 @@
 
 ;;; This definition of exactlyv works but is suboptimal
 ;;;
-;;;(defun exactlyv (n f &amp;rest x)
+;;;(defun exactlyv (n f &rest x)
 ;;;  (let* (
 ;;;	 (z (a-booleanv))
 ;;;	 (vals (apply #'mapcarv (cons f x)))
@@ -2200,11 +2200,11 @@
 
 
 ;;; ;;; Changed to backquote syntax 1/8/99
-(defmacro exactlyv (n f &amp;rest x)
+(defmacro exactlyv (n f &rest x)
   `(exactlyv-internal ,n ,f ,@x)
   )
 
-(defun exactlyv-internal (n f &amp;rest x)
+(defun exactlyv-internal (n f &rest x)
   (declare (integer n))
     (let* (
  	  (z (a-booleanv))
@@ -2238,26 +2238,26 @@
  		    (if (equal (value-of temp) t)
  			(progn
  			  (local (setq countup (1+ countup)))
- 			  (when (&gt;= countup n)
+ 			  (when (>= countup n)
  			    (screamer::assert!-true z)
  			    )
 			  ;; From at-mostv
-			  (when (&gt; countup n)
+			  (when (> countup n)
 			    (screamer::assert!-false z) ;(notv z))
 			    )
  			  )
  		      (local (setq noes (1+ noes)))
  		      )
  		    )
- 		;; If the number of unknowns plus the yesses is &lt; n
+ 		;; If the number of unknowns plus the yesses is < n
  		;; then at-leastv is not satisfiable
- 		(when (and (&lt; (- shortest noes) n)
+ 		(when (and (< (- shortest noes) n)
  			   (not (known?-false z))
  			   )
  		  (screamer::assert!-false z) ; (notv z))
  		  )
 		;; From at-mostv
-		(when (and (&lt;= (- shortest noes) n)
+		(when (and (<= (- shortest noes) n)
  			   (not (known?-true z))
  			   )
  		  (screamer::assert!-true z)
@@ -2279,7 +2279,7 @@
  		    )
  		  )			; when
 		;; From at-mostv
-		(when (and (&gt;= countup n)
+		(when (and (>= countup n)
  			   (known?-true z)
  			   )
  		  (do* (
@@ -2354,7 +2354,7 @@
 
 ;;; Returns a variable constrained to be the subseq of a sequence
 
-(defun subseqv (x n &amp;optional (q nil) )
+(defun subseqv (x n &optional (q nil) )
   (let (
         (z (make-variable))
         noticer 
@@ -2410,7 +2410,7 @@
 ;;; argument should be created if z becomes bound first
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun lengthv (el &amp;optional (is-list t))
+(defun lengthv (el &optional (is-list t))
   (let (
 	(z (an-integer-abovev 0))
 	)
@@ -2462,7 +2462,7 @@
 ;;; This function has a variable number of arguments, but at least one
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun all-differentv (x &amp;rest xs)
+(defun all-differentv (x &rest xs)
   (all-different2 x xs)
   )
 
@@ -2613,7 +2613,7 @@
     (flet (;; This is just a function which can be used by 'sort' to
 	   ;; derive some well-defined ordering for any known values x and y
 	   (strcmp(x y)
-		  (numberp (string&gt; (format nil "~s" x)
+		  (numberp (string> (format nil "~s" x)
 				    (format nil "~s" y)))
 		  )
 	   )
@@ -2906,7 +2906,7 @@
 ;;; class of the object becomes known
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun make-instancev (&amp;rest args)
+(defun make-instancev (&rest args)
   (if (every #'bound? args)
       (apply #'make-instance (mapcar #'value-of args))
     (let ((z (make-variable)))
@@ -3328,7 +3328,7 @@
 ;;; removed from the enumerated domain of the other variable.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun not-equalv (x y &amp;key (full-propagation nil))
+(defun not-equalv (x y &key (full-propagation nil))
   (if (and (bound? x) (bound? y))
       (not (equal (value-of x) (value-of y)))
     
@@ -3384,6 +3384,6 @@
 ;;; Reset the variable to its default so that errors are signalled again
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(setq excl:*enable-package-locked-errors* t)
+; (setq excl:*enable-package-locked-errors* t)
 
 

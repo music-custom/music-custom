@@ -3,7 +3,6 @@
 (defvar *t2l-screamer-fail* 'fail1)
 (defvar *mess* 0)
 (defvar *fuzz* 1d-6)
-
 (defun ith-random-value (n expression)
   (one-value
    (ith-value (a-random-member-of (arithm-ser 0 n 1))
@@ -13,8 +12,17 @@
   :icon 324
   t)
             
-(defmacro om-assert! (&rest sequence)
-  `(progn ,@(mapcar #'(lambda (x) `(assert! ,x)) (butlast sequence)) ,(car (reverse sequence))))
+; (defmacro om-assert! (&rest sequence)
+;  `(progn ,@(mapcar #'(lambda (x) `(assert! ,x)) (butlast sequence)) ,(car (reverse sequence))))
+
+(define-box om-assert! (&rest sequence)
+  :icon 161
+  :doc ""
+  (cond ((null sequence) nil)
+        ((= 1 (length sequence)) (car sequence))
+        (t
+         (assert! (apply #'andv (butlast sequence)))
+         (car (reverse sequence)))))
 
 (defmacro om-one-solution-lf (form)
   `(one-value (solution ,form (static-ordering #'print-linear-force))))
@@ -35,74 +43,7 @@
          (t
           (funcall-nondeterministic fn)))))
 
-(defun om-solution (x &optional force-function)
-  (solution x (cond ((null force-function)
-                     (static-ordering #'linear-force))
-                    ((string= (write-to-string force-function) "plf")
-                     (static-ordering #'print-linear-force))
-                    ((string= (write-to-string force-function) "pdacf")
-                     (static-ordering #'print-divide-and-conquer-force))
-                    ((or (functionp force-function)
-                         (screamer::nondeterministic-function? force-function))
-                     (if (>= *mess* 10) 
-                         (lprint 'om-solution "static-ordering force-function: user fn " force-function))
-                     (static-ordering force-function))
-                    ((string= (write-to-string force-function) "linear-force fn")
-                     (if (>= *mess* 10) 
-                         (lprint 'om-solution "static-ordering force-function: linear-force fn"))
-                     (static-ordering #'linear-force))
-                    ((string= (write-to-string force-function) "lf")
-                     (if (>= *mess* 10) 
-                         (lprint 'om-solution "static-ordering force-function: linear-force fn"))
-                     (static-ordering #'linear-force))
-                    ((string= (write-to-string force-function) "divide-and-conquer-force fn")
-                     (if (>= *mess* 10) 
-                         (lprint 'om-solution "static-ordering force-function: divide-and-conquer-force fn"))
-                     (static-ordering #'divide-and-conquer-force))
-                    ((string= (write-to-string force-function) "dacf")
-                     (if (>= *mess* 10) 
-                         (lprint 'om-solution "static-ordering force-function: divide-and-conquer-force fn"))
-                     (static-ordering #'divide-and-conquer-force))
-                    ((or (string= (write-to-string force-function) "reorder-domain-size-linear-force")
-                         (string= (write-to-string force-function) "rodslf")
-                         (string= (write-to-string force-function) "reorder"))
-                     (if (>= *mess* 10) 
-                         (lprint 'om-solution "reordering force-function: linear-force fn"))
-                     (reorder #'domain-size
-                              #'(lambda (x) (declare (ignore x)) nil)
-                              #'<
-                              #'linear-force))
-                    ((or (string= (write-to-string force-function) "reorder-domain-size-divide-and-conquer-force")
-                         (string= (write-to-string force-function) "rodsdacf")
-                         (string= (write-to-string force-function) "reorder-dacf"))
-                     (if (>= *mess* 10) 
-                         (lprint 'om-solution "reordering force-function: divide-and-conquer-force fn"))
-                     (reorder #'domain-size
-                              #'(lambda (x) (declare (ignore x)) nil)
-                              #'<
-                              #'divide-and-conquer-force))
-                    ((or (string= (write-to-string force-function) "print-reorder-domain-size-linear-force")
-                         (string= (write-to-string force-function) "prodslf")
-                         (string= (write-to-string force-function) "print-reorder-lf"))
-                     (if (>= *mess* 10) 
-                         (lprint 'om-solution "reordering force-function: linear-force fn"))
-                     (reorder #'domain-size
-                              #'(lambda (x) (declare (ignore x)) nil)
-                              #'<
-                              #'print-linear-force))
-                    ((or (string= (write-to-string force-function) "print-reorder-domain-size-divide-and-conquer-force")
-                         (string= (write-to-string force-function) "prodsdacf")
-                         (string= (write-to-string force-function) "print-reorder-dacf"))
-                     (if (>= *mess* 10) 
-                         (lprint 'om-solution "reordering force-function: divide-and-conquer-force fn"))
-                     (reorder #'domain-size
-                              #'(lambda (x) (declare (ignore x)) nil)
-                              #'<
-                              #'print-divide-and-conquer-force))
-                    (t
-                     (if (>= *mess* 10) 
-                         (lprint 'om-solution "static-ordering force-function: linear-force fn"))
-                     (static-ordering #'linear-force)))))
+
 
 (defun all-solutions (x &optional force-function)
   (all-values (om-solution x force-function)))
@@ -233,17 +174,6 @@
 
 (defun absv (k)
   (maxv k (*v k -1)))
-
-#|(defun modv (n d) 
-  (assert! (/=v d 0))
-  (let ((nR (a-realv))
-        (dR (a-realv)))     
-    (assert! (=v nR n))
-    (assert! (=v dR d))
-    (let ((x (-v n (*v d (floorv (/v nR dR))))))      
-      (assert! (>=v x (minv 0 (+v d 1))))
-      (assert! (<=v x (maxv 0 (-v d 1))))
-      x)))|#
 
 (defun modv (n d)
   (let ((x (an-integerv)))         
@@ -1900,47 +1830,4 @@
   (lprint "  " 'trail (length screamer::*trail*))
   arg)
 
-(defmacro n-values (n
-		    &body forms)
-"Copyright (c) 2007, Kilian Sprotte. All rights reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-  * Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-
-  * Redistributions in binary form must reproduce the above
-    copyright notice, this list of conditions and the following
-    disclaimer in the documentation and/or other materials
-    provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE AUTHOR 'AS IS' AND ANY EXPRESSED
-OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-  (let ((values (gensym "VALUES-"))
-        (last-value-cons  (gensym "LAST-VALUE-CONS-"))
-        (value (gensym "VALUE-")))
-    `(let ((,values '())
-           (,last-value-cons nil)
-	   (number 0))
-       (block n-values
-	 (for-effects
-	   (let ((,value (progn ,@forms)))
-	     (global (cond ((null ,values)
-			    (setf ,last-value-cons (list ,value))
-			    (setf ,values ,last-value-cons))
-			   (t (setf (rest ,last-value-cons) (list ,value))
-			      (setf ,last-value-cons (rest ,last-value-cons))))
-		     (incf number))
-	     (when (>= number ,n) (return-from n-values)))))
-       ,values)))
