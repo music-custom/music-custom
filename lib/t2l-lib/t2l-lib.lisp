@@ -9,7 +9,6 @@
 (in-package :t2l)
 (defvar *t2l-lib-files* nil)
 (setf *t2l-lib-files* (list 
-                            (om::om-relative-path '(".") "general")
 			    (om::om-relative-path '(".") "t2l-screamer+")
 			    (om::om-relative-path '(".") "t2l-screamer")
                             (om::om-relative-path '(".") "t2l-screamer-boxes")
