@@ -8,8 +8,8 @@
 
 (in-package :t2l)
 (defvar *t2l-lib-files* nil)
-(setf *t2l-lib-files* (list 
-			    (om::om-relative-path '(".") "t2l-screamer+")
+(setf *t2l-lib-files* (list (om::om-relative-path '(".") "general")
+			    (om::om-relative-path '(".") "screamer+")
 			    (om::om-relative-path '(".") "t2l-screamer")
                             (om::om-relative-path '(".") "t2l-screamer-boxes")
                             (om::om-relative-path '(".") "t2l-screamer-export")
@@ -19,8 +19,7 @@
 			    (om::om-relative-path '(".") "mapprules")
 			    (om::om-relative-path '(".") "midic")
 			    (om::om-relative-path '(".") "music-conversion")
-			    (om::om-relative-path '(".") "export")
-                            ))
+			    (om::om-relative-path '(".") "export")  ))
 
 (mapc #'om::compile&load *t2l-lib-files*)
 
@@ -39,7 +38,11 @@
     Nil
     (om-all-solutions
      om-ith-solution
-     om-one-solution     
+     om-nsolutions
+     om-one-solution
+     om-solution
+     make-screamer-vars
+     list-betweenv
      ms-vars->elems
      ms-vars->ratios
      pcset-filter
@@ -54,7 +57,9 @@
    ("music-conversion-rule" 
     Nil
     Nil
-    (list-nsucc<>v
+    (jjf-species1-motion
+     list-nsucc<>v
+     list-pcset-memberv
      listdx-similarity-var
      modal-xposn-containing
      pcset=v
