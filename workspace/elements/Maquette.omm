@@ -1,0 +1,4 @@
+; OM File Header - Saved 2016/01/26 0:05:14
+; (6.050102 :maqt (om-make-point 334 10) (om-make-point 50 50) (om-make-point 500 400) "" 182 0 "2016/01/20 13:43:14" "2016/01/20 14:01:53")
+; End File Header
+(in-package :om)(load-lib-for (quote nil))(setf *om-current-persistent* (om-load-maq2 "Maquette" (quote ((om-load-maq-boxout "output" 0 (om-make-point 2246 27) (quote ((om-load-inputfun (quote input-funbox) "" "out" nil))) nil nil) (om-load-maq-boxin "input" 0 (om-make-point 932 56) "" "input" nil nil))) (quote nil) (quote (0 10000 0 100)) (quote nil) (om-make-color 0.85 0.85 0.83) (quote ((4 60) ((4 4)) 16 t)) (quote nil) nil t "off" 6.050102 nil (quote (1)) (quote (1)) nil))

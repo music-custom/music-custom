@@ -1,6 +1,8 @@
 (in-package :t2l)
 
-
+(define-box om-score->seqc ()
+  :icon 225
+  :doc "" )
 
 (define-box pcset-filter (&key (card 3) ivs<= ivs>= process-pcset-inverse)
   :icon 324
